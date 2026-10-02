@@ -1,0 +1,99 @@
+/// Fato de mercado: um registro por mês, distribuidor, apresentação (FCC), UF e tipo de farmácia.
+table fVendas
+	lineageTag: b428a99e-3e88-1eab-851e-b574fa4af19c
+
+	column AnoMesNum
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 6b731598-1b9d-3acb-e3cf-c232ce7cb061
+		summarizeBy: none
+		sourceColumn: AnoMesNum
+
+		annotation SummarizationSetBy = Automatic
+
+	column CD_DISTRIBUIDOR
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 12b184cd-31e3-e35c-46df-0eac60b8ddda
+		summarizeBy: none
+		sourceColumn: CD_DISTRIBUIDOR
+
+		annotation SummarizationSetBy = Automatic
+
+	column CD_FCC
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 52147e4a-2f0f-dcb3-5444-038168840ecd
+		summarizeBy: none
+		sourceColumn: CD_FCC
+
+		annotation SummarizationSetBy = Automatic
+
+	column CD_ESTADO
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 75a0d2b3-a09e-09a9-fde2-d30dd33ed7b7
+		summarizeBy: none
+		sourceColumn: CD_ESTADO
+
+		annotation SummarizationSetBy = Automatic
+
+	column CD_TIPO_FARMACIA
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 56b8b0a4-9653-4883-b7f4-00587c8779a0
+		summarizeBy: none
+		sourceColumn: CD_TIPO_FARMACIA
+
+		annotation SummarizationSetBy = Automatic
+
+	column Unidades
+		dataType: int64
+		isHidden
+		formatString: #,0
+		lineageTag: 2a1ed968-1ab0-d64f-4ca9-62ed13798c08
+		summarizeBy: sum
+		sourceColumn: Unidades
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Valor a preço de referência (campo RS_PR da base de mercado). Base de valor herdada do relatório original.
+	column 'Valor PR'
+		dataType: decimal
+		isHidden
+		formatString: "R$"\ #,0.00
+		lineageTag: bbec9782-8dd5-ce98-582e-14fcecbb9282
+		summarizeBy: sum
+		sourceColumn: Valor PR
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Valor a preço de compra (campo RS_PC da base de mercado).
+	column 'Valor PC'
+		dataType: decimal
+		isHidden
+		formatString: "R$"\ #,0.00
+		lineageTag: a521aa93-2a78-8dd6-a7bb-ec1a116d7eee
+		summarizeBy: sum
+		sourceColumn: Valor PC
+
+		annotation SummarizationSetBy = Automatic
+
+	partition fVendas = m
+		mode: import
+		source =
+				let
+				    Fonte = fnLerCsv("fVendas.csv"),
+				    Tipos = Table.TransformColumnTypes(Fonte, {{"AnoMesNum", Int64.Type}, {"CD_DISTRIBUIDOR", Int64.Type}, {"CD_FCC", Int64.Type}, {"CD_ESTADO", Int64.Type}, {"CD_TIPO_FARMACIA", Int64.Type}, {"Unidades", Int64.Type}, {"ValorPPPCent", Int64.Type}, {"ValorPCCent", Int64.Type}}, "en-US"),
+				    Valores = Table.TransformColumns(Tipos, {{"ValorPPPCent", each _ / 100, Currency.Type}, {"ValorPCCent", each _ / 100, Currency.Type}}),
+				    Nomes = Table.RenameColumns(Valores, {{"ValorPPPCent", "Valor PR"}, {"ValorPCCent", "Valor PC"}})
+				in
+				    Nomes
+
+	annotation PBI_ResultType = Table
+

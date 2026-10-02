@@ -1,0 +1,49 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "dt_laboratorio",
+  "displayName": "Detalhe Laboratório",
+  "displayOption": "FitToPage",
+  "height": 900,
+  "width": 1600,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "094840f42ed18fbc8af1",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "f627465d786c002134a6",
+        "boundFilter": "6532fea23589ae56f7b7",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dProduto"
+              }
+            },
+            "Property": "Laboratório"
+          }
+        }
+      }
+    ]
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "6532fea23589ae56f7b7",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dProduto"
+              }
+            },
+            "Property": "Laboratório"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drill"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

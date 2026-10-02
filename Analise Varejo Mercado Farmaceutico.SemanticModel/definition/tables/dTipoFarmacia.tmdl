@@ -1,0 +1,54 @@
+table dTipoFarmacia
+	lineageTag: 60bcd662-c0b5-3a65-046b-11c483312a36
+
+	column CD_TIPO_FARMACIA
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: fbcd138d-46ec-9ce6-70f4-b2b6159ac0a5
+		summarizeBy: none
+		sourceColumn: CD_TIPO_FARMACIA
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tipo de Farmácia'
+		dataType: string
+		lineageTag: 13308e52-532a-ca24-8f01-3858ff00dc84
+		summarizeBy: none
+		sourceColumn: Tipo de Farmácia
+		sortByColumn: Ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Tipo de Farmácia (curto)'
+		dataType: string
+		lineageTag: 5569abc6-b5a2-b9d3-2300-47a53acc2dbc
+		summarizeBy: none
+		sourceColumn: Tipo de Farmácia (curto)
+		sortByColumn: Ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column Ordem
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: eefdd94f-46e2-f9ee-bd13-acf676d7cf52
+		summarizeBy: none
+		sourceColumn: Ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dTipoFarmacia = m
+		mode: import
+		source =
+				let
+				    Fonte = fnLerCsv("dTipoFarmacia.csv"),
+				    Tipos = Table.TransformColumnTypes(Fonte, {{"CD_TIPO_FARMACIA", Int64.Type}, {"TipoFarmacia", type text}, {"TipoFarmaciaCurto", type text}, {"Ordem", Int64.Type}}, "en-US"),
+				    Nomes = Table.RenameColumns(Tipos, {{"TipoFarmacia", "Tipo de Farmácia"}, {"TipoFarmaciaCurto", "Tipo de Farmácia (curto)"}})
+				in
+				    Nomes
+
+	annotation PBI_ResultType = Table
+

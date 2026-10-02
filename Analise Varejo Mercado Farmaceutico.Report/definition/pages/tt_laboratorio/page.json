@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "tt_laboratorio",
+  "displayName": "Tooltip Laboratório",
+  "displayOption": "FitToPage",
+  "height": 330,
+  "width": 340,
+  "pageBinding": {
+    "name": "d568274057310f89edcd",
+    "type": "Tooltip",
+    "parameters": []
+  },
+  "visibility": "HiddenInViewMode",
+  "type": "Tooltip"
+}

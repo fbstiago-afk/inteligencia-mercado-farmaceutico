@@ -1,0 +1,1384 @@
+/// Tabela única de medidas, organizada em pastas de exibição.
+table _Medidas
+	lineageTag: ce4f0838-ec69-7fdb-48a0-520bb0ddb6d2
+
+	/// Valor total do mercado (distribuidora Vitalis + demais distribuidores), a preço de referência (PR), no contexto de filtro atual.
+	measure 'Venda Total Mercado' = SUM ( fVendas[Valor PR] )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 00 Base
+		lineageTag: 1c1e4507-9647-985a-2754-cd6e4ba90558
+
+	/// Valor vendido pela Vitalis a preço de referência (PR).
+	measure 'Venda Vitalis' = CALCULATE ( [Venda Total Mercado], dDistribuidor[Distribuidor] = "VITALIS" )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 00 Base
+		lineageTag: b9695d9f-d1af-ee48-bb98-aae13f78732b
+
+	/// Valor vendido pelos demais distribuidores a preço de referência (PR).
+	measure 'Venda Outros' = CALCULATE ( [Venda Total Mercado], dDistribuidor[Distribuidor] = "OUTROS" )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 00 Base
+		lineageTag: 1f1492b5-d4f2-f9e8-3e95-4da16fd1cd48
+
+	/// Unidades vendidas no mercado total.
+	measure 'Qtde Mercado' = SUM ( fVendas[Unidades] )
+		formatString: #,0
+		displayFolder: 00 Base
+		lineageTag: 2156164b-b880-cfba-b97c-43c41ef10fee
+
+	/// Unidades vendidas pela Vitalis.
+	measure 'Qtde Vitalis' = CALCULATE ( [Qtde Mercado], dDistribuidor[Distribuidor] = "VITALIS" )
+		formatString: #,0
+		displayFolder: 00 Base
+		lineageTag: 48bda3c7-d9fc-da28-1e5b-cca9987b5ec0
+
+	/// Unidades vendidas pelos demais distribuidores.
+	measure 'Qtde Outros' = CALCULATE ( [Qtde Mercado], dDistribuidor[Distribuidor] = "OUTROS" )
+		formatString: #,0
+		displayFolder: 00 Base
+		lineageTag: c343bf42-011d-0048-75aa-c55c5a07e349
+
+	/// Valor total do mercado a preço de compra (PC). Base alternativa: cobre também não medicamentos, que não têm preço de referência.
+	measure 'Venda Total Mercado (PC)' = SUM ( fVendas[Valor PC] )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 00 Base
+		lineageTag: 59d6e5ed-71dc-7e79-f38b-519f45928029
+
+	/// Valor vendido pela Vitalis a preço de compra (PC).
+	measure 'Venda Vitalis (PC)' = CALCULATE ( [Venda Total Mercado (PC)], dDistribuidor[Distribuidor] = "VITALIS" )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 00 Base
+		lineageTag: 7980dfd3-f78a-3e57-eedc-4364573a06de
+
+	/// Venda no período anterior equivalente: mesma quantidade de meses, imediatamente antes do período selecionado. Em branco quando a base não cobre o período anterior inteiro.
+	measure 'Venda Vitalis PA' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _n = _max - _min + 1
+			RETURN
+			    IF (
+			        _min - _n >= 1,
+			        CALCULATE (
+			            [Venda Vitalis],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - _n
+			                && dCalendario[Mês Índice] <= _max - _n
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: ac9e9ccf-9611-dcdc-a718-feae9a2e87bd
+
+	/// Variação em reais da venda frente ao período anterior equivalente.
+	measure 'Δ Venda Vitalis R$' =
+			VAR _atual = [Venda Vitalis]
+			VAR _base = [Venda Vitalis PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ), _atual - _base )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: b8fc36ca-254b-4fa1-3b58-fe973daeb62c
+
+	/// Venda do último mês do período selecionado.
+	measure 'Venda Vitalis Mês Atual' =
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    CALCULATE ( [Venda Vitalis], dCalendario[Mês Índice] = _max )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: 34df3bca-f343-ddb0-3b22-55ea3bf84b33
+
+	/// Venda do mês imediatamente anterior ao último mês selecionado.
+	measure 'Venda Vitalis Mês Anterior' =
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    CALCULATE ( [Venda Vitalis], REMOVEFILTERS ( dCalendario ), dCalendario[Mês Índice] = _max - 1 )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: 75ec479b-8da7-7681-4593-5b20d4affb20
+
+	/// Variação em reais do último mês contra o mês anterior.
+	measure 'MoM R$' =
+			VAR _atual = [Venda Vitalis Mês Atual]
+			VAR _base = [Venda Vitalis Mês Anterior]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ), _atual - _base )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: 2c17d51d-9fd0-844d-8277-2b46d72b5a35
+
+	/// Variação percentual do último mês contra o mês anterior.
+	measure 'MoM %' =
+			VAR _atual = [Venda Vitalis Mês Atual]
+			VAR _base = [Venda Vitalis Mês Anterior]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 01 Receita
+		lineageTag: b8f5d534-a29a-5df9-37a1-97f72a8d6f6c
+
+	/// Venda no mesmo período do ano anterior (12 meses antes).
+	measure 'Venda Vitalis LY' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    IF (
+			        _min - 12 >= 1,
+			        CALCULATE (
+			            [Venda Vitalis],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - 12
+			                && dCalendario[Mês Índice] <= _max - 12
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: aeae5d18-6486-b7d5-5979-63ac400df3e0
+
+	/// Variação em reais contra o mesmo período do ano anterior.
+	measure 'YoY R$' =
+			VAR _atual = [Venda Vitalis]
+			VAR _base = [Venda Vitalis LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ), _atual - _base )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: e9d9c701-0d80-dd86-c016-eaf3f2197df6
+
+	/// Variação percentual contra o mesmo período do ano anterior.
+	measure 'YoY %' =
+			VAR _atual = [Venda Vitalis]
+			VAR _base = [Venda Vitalis LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 01 Receita
+		lineageTag: 89fcbecb-3ef8-115d-4bb4-99ae19ec7526
+
+	/// Venda acumulada de janeiro até o último mês selecionado.
+	measure 'Venda Vitalis YTD' =
+			VAR _fim = MAX ( dCalendario[AnoMesNum] ) - 0
+			VAR _ini = INT ( _fim / 100 ) * 100 + 1
+			RETURN
+			    CALCULATE (
+			        [Venda Vitalis],
+			        REMOVEFILTERS ( dCalendario ),
+			        dCalendario[AnoMesNum] >= _ini
+			            && dCalendario[AnoMesNum] <= _fim
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: 1416268b-a656-31ff-a7cd-1f04a3a9fe3a
+
+	/// Venda acumulada no mesmo intervalo do ano anterior.
+	measure 'Venda Vitalis YTD LY' =
+			VAR _fim = MAX ( dCalendario[AnoMesNum] ) - 100
+			VAR _ini = INT ( _fim / 100 ) * 100 + 1
+			RETURN
+			    CALCULATE (
+			        [Venda Vitalis],
+			        REMOVEFILTERS ( dCalendario ),
+			        dCalendario[AnoMesNum] >= _ini
+			            && dCalendario[AnoMesNum] <= _fim
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: 7b99a9e1-866f-dd21-a259-a94441ffae2a
+
+	/// Diferença em reais entre o acumulado do ano e o acumulado do ano anterior.
+	measure 'YTD Δ R$' =
+			VAR _atual = [Venda Vitalis YTD]
+			VAR _base = [Venda Vitalis YTD LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ), _atual - _base )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: daae7dcd-0b01-9d91-f1ce-4407cb86633f
+
+	/// Variação percentual do acumulado do ano contra o ano anterior.
+	measure 'YTD Δ %' =
+			VAR _atual = [Venda Vitalis YTD]
+			VAR _base = [Venda Vitalis YTD LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 01 Receita
+		lineageTag: 25a45162-0228-a7f2-0ec3-e4ab11bd6567
+
+	/// Média móvel de 3 meses da venda, terminando no último mês do contexto.
+	measure 'Venda Vitalis MM3' =
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    IF (
+			        _max >= 3,
+			        DIVIDE (
+			            CALCULATE (
+			                [Venda Vitalis],
+			                REMOVEFILTERS ( dCalendario ),
+			                dCalendario[Mês Índice] >= _max - 2
+			                    && dCalendario[Mês Índice] <= _max
+			            ),
+			            3
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 01 Receita
+		lineageTag: c0ddfab6-1386-df06-4128-9538b550ec8b
+
+	/// Mercado total no período anterior equivalente.
+	measure 'Venda Mercado PA' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _n = _max - _min + 1
+			RETURN
+			    IF (
+			        _min - _n >= 1,
+			        CALCULATE (
+			            [Venda Total Mercado],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - _n
+			                && dCalendario[Mês Índice] <= _max - _n
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: a110b077-a05b-a5e1-1ead-0a6a8ee0ce1a
+
+	/// Mercado total no mesmo período do ano anterior.
+	measure 'Venda Mercado LY' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    IF (
+			        _min - 12 >= 1,
+			        CALCULATE (
+			            [Venda Total Mercado],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - 12
+			                && dCalendario[Mês Índice] <= _max - 12
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: d30d9935-c386-3674-9b1c-72e7a74c4ec3
+
+	/// Média móvel de 3 meses do mercado total.
+	measure 'Venda Mercado MM3' =
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			RETURN
+			    IF (
+			        _max >= 3,
+			        DIVIDE (
+			            CALCULATE (
+			                [Venda Total Mercado],
+			                REMOVEFILTERS ( dCalendario ),
+			                dCalendario[Mês Índice] >= _max - 2
+			                    && dCalendario[Mês Índice] <= _max
+			            ),
+			            3
+			        )
+			    )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: ce2b47ca-fcf4-fbb3-e427-fa10552b2d70
+
+	/// Tamanho do mercado ainda não atendido pela Vitalis: mercado total menos venda Vitalis.
+	measure 'Market Gap' = [Venda Total Mercado] - [Venda Vitalis]
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: 781cbe17-cbfa-b37a-0f67-f3ae8898c60f
+
+	/// Venda incremental necessária para ganhar 1 ponto percentual de share no mercado atual.
+	measure 'Potencial +1 p.p.' = [Venda Total Mercado] * 0.01
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: 011d5da5-6d9e-ab4c-dbc7-18e46f5e45b5
+
+	/// Venda incremental necessária para ganhar 2 pontos percentuais de share no mercado atual.
+	measure 'Potencial +2 p.p.' = [Venda Total Mercado] * 0.02
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: a4357b3b-65f2-f4cd-4837-2136a29bf95b
+
+	/// Ganho de share (em p.p.) escolhido no parâmetro Meta Share. Padrão: 1 p.p.
+	measure 'Meta Share p.p. Valor' = SELECTEDVALUE ( 'Meta Share'[Meta Share p.p.], 1 )
+		formatString: #,0.0
+		displayFolder: 02 Mercado
+		lineageTag: 4af74772-73ab-8214-d4a7-7821e955914f
+
+	/// Venda incremental necessária para ganhar o número de pontos percentuais escolhido no parâmetro Meta Share.
+	measure 'Potencial Share Meta' = [Venda Total Mercado] * [Meta Share p.p. Valor] / 100
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 02 Mercado
+		lineageTag: 6605c355-d172-e751-ca17-124f9f8ad7ce
+
+	/// Participação da venda Vitalis sobre a venda total do mercado (inclui a própria Vitalis) no contexto atual de filtro.
+	measure 'Share Vitalis' = DIVIDE ( [Venda Vitalis], [Venda Total Mercado] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: 5b5d7c88-fd78-ff96-cce0-094d20f5e8f1
+
+	/// Share no período anterior equivalente.
+	measure 'Share Vitalis PA' = DIVIDE ( [Venda Vitalis PA], [Venda Mercado PA] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: 518b7000-fc27-9c3c-2411-b9f8fa52858c
+
+	/// Variação do share frente ao período anterior equivalente, em pontos percentuais (não em %).
+	measure 'Δ Share p.p.' =
+			VAR _mercadoPA = [Venda Mercado PA]
+			RETURN
+			    IF (
+			        NOT ISBLANK ( _mercadoPA ) && NOT ISBLANK ( [Venda Total Mercado] ),
+			        ( [Share Vitalis] - [Share Vitalis PA] ) * 100
+			    )
+		formatString: +0.00" p.p.";-0.00" p.p.";0.00" p.p."
+		displayFolder: 03 Share
+		lineageTag: 18767580-75fb-0adc-95b1-8916af1bd511
+
+	/// Share no mesmo período do ano anterior.
+	measure 'Share Vitalis LY' = DIVIDE ( [Venda Vitalis LY], [Venda Mercado LY] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: b8dafbf2-f99e-f377-63bb-166ae8da1dea
+
+	/// Variação do share contra o mesmo período do ano anterior, em pontos percentuais.
+	measure 'Δ Share YoY p.p.' =
+			VAR _mercadoLY = [Venda Mercado LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _mercadoLY ), ( [Share Vitalis] - [Share Vitalis LY] ) * 100 )
+		formatString: +0.00" p.p.";-0.00" p.p.";0.00" p.p."
+		displayFolder: 03 Share
+		lineageTag: 034493b7-e40a-8cad-405f-6350bb229500
+
+	/// Share calculado sobre a média móvel de 3 meses (suaviza meses atípicos).
+	measure 'Share Vitalis MM3' = DIVIDE ( [Venda Vitalis MM3], [Venda Mercado MM3] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: dbb6277c-589a-a585-0922-ea813f97530d
+
+	/// Participação da Vitalis em unidades.
+	measure 'Share Qtde Vitalis' = DIVIDE ( [Qtde Vitalis], [Qtde Mercado] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: 1716e79c-6ee5-c005-04e9-d6d2d377c876
+
+	/// Share calculado a preço de compra (PC). Use para não medicamentos (PEC, PAC, Nutricionais, OTC).
+	measure 'Share Vitalis (PC)' = DIVIDE ( [Venda Vitalis (PC)], [Venda Total Mercado (PC)] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: 8eaa732a-d089-1de0-1d96-af6a52c65483
+
+	/// Cálculo usado no relatório de 2023: venda Vitalis dividida pela venda dos outros distribuidores. Mantida só para conciliação; não é participação de mercado.
+	measure 'Razão Vitalis/Outros (legado)' = DIVIDE ( [Venda Vitalis], [Venda Outros] )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 03 Share
+		lineageTag: 674fddef-71eb-203e-608b-cb22ace09adb
+
+	/// Variação mínima de share (em p.p.) para classificar ganho ou perda. Abaixo disso, o status é Estável.
+	measure 'Limiar Estabilidade p.p.' = 0.10
+		formatString: 0.00
+		displayFolder: 03 Share
+		lineageTag: 2791f761-10f2-840f-b164-c1da64184850
+
+	/// Classificação dinâmica pelo Δ Share p.p.: Ganhando share, Perdendo share, Estável (dentro do limiar), Novo (sem venda no período anterior) ou Sem base comparável.
+	measure 'Status Share' =
+			VAR _d = [Δ Share p.p.]
+			VAR _v = [Venda Vitalis]
+			VAR _vPA = [Venda Vitalis PA]
+			VAR _mPA = [Venda Mercado PA]
+			VAR _lim = [Limiar Estabilidade p.p.]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _v ) && ISBLANK ( _vPA ), BLANK (),
+			        ISBLANK ( _mPA ), "Sem base comparável",
+			        ISBLANK ( _vPA ) && _v > 0, "Novo",
+			        _d >= _lim, "Ganhando share",
+			        _d <= - _lim, "Perdendo share",
+			        "Estável"
+			    )
+		displayFolder: 03 Share
+		lineageTag: 76a35f8e-3dd3-5aeb-1c12-842f4cd1580a
+
+	/// Share médio da Vitalis no período, nos estados e nos tipos de farmácia selecionados, considerando todos os produtos. É a régua contra a qual cada linha é comparada.
+	measure 'Share Referência' = CALCULATE ( [Share Vitalis], REMOVEFILTERS ( dProduto ), ALLSELECTED ( dEstado ), ALLSELECTED ( dTipoFarmacia ) )
+		formatString: 0.00%;-0.00%;0.00%
+		displayFolder: 09 Benchmark
+		lineageTag: 106b7e38-2ece-e5aa-3e82-b7048f7d5309
+
+	/// Unidades no período anterior equivalente.
+	measure 'Qtde Vitalis PA' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _n = _max - _min + 1
+			RETURN
+			    IF (
+			        _min - _n >= 1,
+			        CALCULATE (
+			            [Qtde Vitalis],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - _n
+			                && dCalendario[Mês Índice] <= _max - _n
+			        )
+			    )
+		formatString: #,0
+		displayFolder: 04 Quantidade
+		lineageTag: 679c8621-b37b-85ed-8b7c-cef63869abdb
+
+	/// Unidades do mercado no período anterior equivalente.
+	measure 'Qtde Mercado PA' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _n = _max - _min + 1
+			RETURN
+			    IF (
+			        _min - _n >= 1,
+			        CALCULATE (
+			            [Qtde Mercado],
+			            REMOVEFILTERS ( dCalendario ),
+			            dCalendario[Mês Índice] >= _min - _n
+			                && dCalendario[Mês Índice] <= _max - _n
+			        )
+			    )
+		formatString: #,0
+		displayFolder: 04 Quantidade
+		lineageTag: a0d75e86-2cc6-6ca8-4e3e-0bad19edaa0e
+
+	/// Crescimento em unidades frente ao período anterior equivalente.
+	measure 'Cresc. Qtde Vitalis %' =
+			VAR _atual = [Qtde Vitalis]
+			VAR _base = [Qtde Vitalis PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 04 Quantidade
+		lineageTag: 1216684b-07ec-6a96-1be9-3db93e0b7574
+
+	/// Crescimento do mercado em unidades frente ao período anterior equivalente.
+	measure 'Cresc. Qtde Mercado %' =
+			VAR _atual = [Qtde Mercado]
+			VAR _base = [Qtde Mercado PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 04 Quantidade
+		lineageTag: 498f53be-83f1-c593-0f3d-3ff6f3e49b39
+
+	/// Crescimento da venda Vitalis frente ao período anterior equivalente.
+	measure 'Cresc. Vitalis %' =
+			VAR _atual = [Venda Vitalis]
+			VAR _base = [Venda Vitalis PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 05 Crescimento
+		lineageTag: 60af008e-c886-501f-2995-e07044852f92
+
+	/// Crescimento do mercado total frente ao período anterior equivalente.
+	measure 'Cresc. Mercado %' =
+			VAR _atual = [Venda Total Mercado]
+			VAR _base = [Venda Mercado PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 05 Crescimento
+		lineageTag: d788c067-244e-89e1-6546-59a87570d078
+
+	/// Crescimento do mercado contra o mesmo período do ano anterior.
+	measure 'Mercado YoY %' =
+			VAR _atual = [Venda Total Mercado]
+			VAR _base = [Venda Mercado LY]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 05 Crescimento
+		lineageTag: 7391e90b-becb-d1a5-143c-433a3de2c974
+
+	/// (1 + crescimento Vitalis) ÷ (1 + crescimento do mercado) × 100. Acima de 100 a Vitalis cresce mais que o mercado e ganha share.
+	measure 'Índice de Evolução' =
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _cm = [Cresc. Mercado %]
+			RETURN
+			    IF ( NOT ISBLANK ( _cv ) && NOT ISBLANK ( _cm ), DIVIDE ( 1 + _cv, 1 + _cm ) * 100 )
+		formatString: 0
+		displayFolder: 05 Crescimento
+		lineageTag: a8fa6584-f86e-9246-6b4a-1093deea60b6
+
+	/// Posição na matriz crescimento do mercado × crescimento Vitalis.
+	measure 'Quadrante de Crescimento' =
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _cm = [Cresc. Mercado %]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _cv ) || ISBLANK ( _cm ), BLANK (),
+			        _cm >= 0 && _cv >= 0, "1 · Mercado cresce / Vitalis cresce",
+			        _cm >= 0, "2 · Mercado cresce / Vitalis cai",
+			        _cv >= 0, "3 · Mercado cai / Vitalis cresce",
+			        "4 · Mercado cai / Vitalis cai"
+			    )
+		displayFolder: 05 Crescimento
+		lineageTag: 0d29efc9-7beb-cc63-c4ae-b787b80afc52
+
+	/// Compara a média dos últimos 3 meses com a média dos 3 meses anteriores: Alta acima de +5%, Queda abaixo de −5%, Estável entre os dois.
+	measure Tendência =
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _recente =
+			    CALCULATE ( [Venda Vitalis], REMOVEFILTERS ( dCalendario ), dCalendario[Mês Índice] >= _max - 2 && dCalendario[Mês Índice] <= _max )
+			VAR _anterior =
+			    CALCULATE ( [Venda Vitalis], REMOVEFILTERS ( dCalendario ), dCalendario[Mês Índice] >= _max - 5 && dCalendario[Mês Índice] <= _max - 3 )
+			VAR _var = DIVIDE ( _recente - _anterior, _anterior )
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _recente ) && ISBLANK ( _anterior ), BLANK (),
+			        _max < 6 || ISBLANK ( _anterior ), "Sem base",
+			        _var > 0.05, "Alta",
+			        _var < -0.05, "Queda",
+			        "Estável"
+			    )
+		displayFolder: 05 Crescimento
+		lineageTag: f1af3da2-b210-f6a4-0f8b-4565a9078203
+
+	/// Posição do produto por venda Vitalis, entre todos os itens que atendem aos filtros da página (não depende das outras colunas do visual).
+	measure 'Ranking Produto' =
+			VAR _valor = [Venda Vitalis]
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Produto · Laboratório] ) && NOT ISBLANK ( _valor ),
+			        CALCULATE ( RANKX ( ALL ( dProduto[Produto · Laboratório] ), [Venda Vitalis], _valor, DESC, DENSE ), ALLSELECTED ( dProduto ) )
+			    )
+		formatString: 0
+		displayFolder: 06 Ranking
+		lineageTag: d44b8c06-53a7-a228-a08a-00da476ea53b
+
+	/// Posição no período anterior equivalente.
+	measure 'Ranking Produto Anterior' =
+			VAR _valor = [Venda Vitalis PA]
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Produto · Laboratório] ) && NOT ISBLANK ( _valor ),
+			        CALCULATE ( RANKX ( ALL ( dProduto[Produto · Laboratório] ), [Venda Vitalis PA], _valor, DESC, DENSE ), ALLSELECTED ( dProduto ) )
+			    )
+		formatString: 0
+		displayFolder: 06 Ranking
+		lineageTag: 25f5bf10-9892-ee81-217e-da5d92492fb1
+
+	/// Posições ganhas (positivo) ou perdidas (negativo) frente ao período anterior.
+	measure 'Δ Ranking Produto' =
+			VAR _r = [Ranking Produto]
+			VAR _ra = [Ranking Produto Anterior]
+			RETURN
+			    IF ( NOT ISBLANK ( _r ) && NOT ISBLANK ( _ra ), _ra - _r )
+		formatString: +0;-0;0
+		displayFolder: 06 Ranking
+		lineageTag: 06448282-d257-10e1-12b0-3e2e74bde8f2
+
+	/// Seta com o número de posições ganhas ou perdidas; ● novo quando não havia venda no período anterior.
+	measure 'Indicador Ranking Produto' =
+			VAR _r = [Ranking Produto]
+			VAR _ra = [Ranking Produto Anterior]
+			VAR _d = [Δ Ranking Produto]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _r ), BLANK (),
+			        ISBLANK ( _ra ), "● novo",
+			        _d > 0, "▲ " & _d,
+			        _d < 0, "▼ " & ABS ( _d ),
+			        "▬"
+			    )
+		displayFolder: 06 Ranking
+		lineageTag: 7878b62c-0cf5-8359-8078-a686fa067539
+
+	/// Posição do laboratório por venda Vitalis, entre todos os itens que atendem aos filtros da página (não depende das outras colunas do visual).
+	measure 'Ranking Laboratório' =
+			VAR _valor = [Venda Vitalis]
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Laboratório] ) && NOT ISBLANK ( _valor ),
+			        CALCULATE ( RANKX ( ALL ( dProduto[Laboratório] ), [Venda Vitalis], _valor, DESC, DENSE ), ALLSELECTED ( dProduto ) )
+			    )
+		formatString: 0
+		displayFolder: 06 Ranking
+		lineageTag: 33ea41cf-2688-27ae-3c2b-421eae82eb2d
+
+	/// Posição no período anterior equivalente.
+	measure 'Ranking Laboratório Anterior' =
+			VAR _valor = [Venda Vitalis PA]
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Laboratório] ) && NOT ISBLANK ( _valor ),
+			        CALCULATE ( RANKX ( ALL ( dProduto[Laboratório] ), [Venda Vitalis PA], _valor, DESC, DENSE ), ALLSELECTED ( dProduto ) )
+			    )
+		formatString: 0
+		displayFolder: 06 Ranking
+		lineageTag: c709da3b-fcfc-d9bb-bd75-863d32778d4d
+
+	/// Posições ganhas (positivo) ou perdidas (negativo) frente ao período anterior.
+	measure 'Δ Ranking Laboratório' =
+			VAR _r = [Ranking Laboratório]
+			VAR _ra = [Ranking Laboratório Anterior]
+			RETURN
+			    IF ( NOT ISBLANK ( _r ) && NOT ISBLANK ( _ra ), _ra - _r )
+		formatString: +0;-0;0
+		displayFolder: 06 Ranking
+		lineageTag: 8aea6f0f-f9cd-66dd-b05a-212264c869a6
+
+	/// Seta com o número de posições ganhas ou perdidas; ● novo quando não havia venda no período anterior.
+	measure 'Indicador Ranking Laboratório' =
+			VAR _r = [Ranking Laboratório]
+			VAR _ra = [Ranking Laboratório Anterior]
+			VAR _d = [Δ Ranking Laboratório]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _r ), BLANK (),
+			        ISBLANK ( _ra ), "● novo",
+			        _d > 0, "▲ " & _d,
+			        _d < 0, "▼ " & ABS ( _d ),
+			        "▬"
+			    )
+		displayFolder: 06 Ranking
+		lineageTag: 6706be0a-d29c-3256-2a73-fe476d846b3a
+
+	/// Pareto: participação acumulada da venda Vitalis, do maior produto até o produto da linha.
+	measure '% Acumulado Venda (Produto)' =
+			VAR _valor = [Venda Vitalis]
+			VAR _tab = ADDCOLUMNS ( ALL ( dProduto[Produto · Laboratório] ), "@v", [Venda Vitalis] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Produto · Laboratório] ) && _valor > 0,
+			        DIVIDE ( SUMX ( FILTER ( _tab, [@v] >= _valor ), [@v] ), _total )
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: 7b5bce45-b775-14d5-bc93-fc473ce32eb1
+
+	/// Pareto: participação acumulada do mercado, do maior produto até o produto da linha.
+	measure '% Acumulado Mercado (Produto)' =
+			VAR _valor = [Venda Total Mercado]
+			VAR _tab = ADDCOLUMNS ( ALL ( dProduto[Produto · Laboratório] ), "@v", [Venda Total Mercado] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Produto · Laboratório] ) && _valor > 0,
+			        DIVIDE ( SUMX ( FILTER ( _tab, [@v] >= _valor ), [@v] ), _total )
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: 65d0db78-a619-3410-3664-6190995ff58f
+
+	/// Pareto: participação acumulada da venda Vitalis por laboratório.
+	measure '% Acumulado Venda (Laboratório)' =
+			VAR _valor = [Venda Vitalis]
+			VAR _tab = ADDCOLUMNS ( ALL ( dProduto[Laboratório] ), "@v", [Venda Vitalis] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    IF (
+			        HASONEVALUE ( dProduto[Laboratório] ) && _valor > 0,
+			        DIVIDE ( SUMX ( FILTER ( _tab, [@v] >= _valor ), [@v] ), _total )
+			    )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: ad45d97e-dbcc-0224-0212-6806875eb6a0
+
+	/// Parcela da venda Vitalis concentrada nos 5 maiores produtos.
+	measure 'Top 5 Produtos %' =
+			VAR _tab = ADDCOLUMNS ( VALUES ( dProduto[Produto · Laboratório] ), "@v", [Venda Vitalis] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    DIVIDE ( SUMX ( TOPN ( 5, _tab, [@v], DESC ), [@v] ), _total )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: fb56e1fd-8306-0a6d-88bd-aac64adb0bda
+
+	/// Parcela da venda Vitalis concentrada nos 10 maiores produtos.
+	measure 'Top 10 Produtos %' =
+			VAR _tab = ADDCOLUMNS ( VALUES ( dProduto[Produto · Laboratório] ), "@v", [Venda Vitalis] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    DIVIDE ( SUMX ( TOPN ( 10, _tab, [@v], DESC ), [@v] ), _total )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: 396eb50a-5b53-932b-e157-c99438ca886d
+
+	/// Parcela da venda Vitalis concentrada nos 5 maiores laboratórios.
+	measure 'Top 5 Laboratórios %' =
+			VAR _tab = ADDCOLUMNS ( VALUES ( dProduto[Laboratório] ), "@v", [Venda Vitalis] )
+			VAR _total = SUMX ( _tab, [@v] )
+			RETURN
+			    DIVIDE ( SUMX ( TOPN ( 5, _tab, [@v], DESC ), [@v] ), _total )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: 27a7cf22-98f3-6663-3694-6814ae58cc59
+
+	/// Quantidade de produtos necessária para somar 80% da venda Vitalis.
+	measure 'Produtos p/ 80% da Venda' =
+			VAR _tab = FILTER ( ADDCOLUMNS ( VALUES ( dProduto[Produto · Laboratório] ), "@v", [Venda Vitalis] ), [@v] > 0 )
+			VAR _total = SUMX ( _tab, [@v] )
+			VAR _acum =
+			    ADDCOLUMNS (
+			        _tab,
+			        "@c", SUMX ( WINDOW ( 1, ABS, 0, REL, _tab, ORDERBY ( [@v], DESC, dProduto[Produto · Laboratório], ASC ) ), [@v] )
+			    )
+			RETURN
+			    COUNTROWS ( FILTER ( _acum, [@c] - [@v] < 0.8 * _total ) )
+		formatString: #,0
+		displayFolder: 06 Ranking
+		lineageTag: bd98d518-274c-2887-81a3-e3398a99484a
+
+	/// Quantidade de laboratórios necessária para somar 80% da venda Vitalis.
+	measure 'Laboratórios p/ 80% da Venda' =
+			VAR _tab = FILTER ( ADDCOLUMNS ( VALUES ( dProduto[Laboratório] ), "@v", [Venda Vitalis] ), [@v] > 0 )
+			VAR _total = SUMX ( _tab, [@v] )
+			VAR _acum =
+			    ADDCOLUMNS (
+			        _tab,
+			        "@c", SUMX ( WINDOW ( 1, ABS, 0, REL, _tab, ORDERBY ( [@v], DESC, dProduto[Laboratório], ASC ) ), [@v] )
+			    )
+			RETURN
+			    COUNTROWS ( FILTER ( _acum, [@c] - [@v] < 0.8 * _total ) )
+		formatString: #,0
+		displayFolder: 06 Ranking
+		lineageTag: 0dc23167-7d23-4ac5-75a6-141a1df96f51
+
+	/// Produtos com venda Vitalis no contexto.
+	measure 'Qtd Produtos Vitalis' = COUNTROWS ( FILTER ( VALUES ( dProduto[Produto · Laboratório] ), [Venda Vitalis] > 0 ) )
+		formatString: #,0
+		displayFolder: 06 Ranking
+		lineageTag: eef6b502-f919-6230-0c2b-f4fba9fd312b
+
+	/// Produtos com venda no mercado no contexto.
+	measure 'Qtd Produtos Mercado' = COUNTROWS ( FILTER ( VALUES ( dProduto[Produto · Laboratório] ), [Venda Total Mercado] > 0 ) )
+		formatString: #,0
+		displayFolder: 06 Ranking
+		lineageTag: 938b701d-3e39-4e49-5bab-5034c83e21de
+
+	/// Produtos vendidos pela Vitalis sobre os produtos vendidos no mercado.
+	measure 'Cobertura de Portfólio %' = DIVIDE ( [Qtd Produtos Vitalis], [Qtd Produtos Mercado] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 06 Ranking
+		lineageTag: d635ecef-68d3-7413-ce41-c90c93a812fe
+
+	/// Produto de maior venda Vitalis no contexto.
+	measure 'Top Produto' =
+			VAR _top = TOPN ( 1, VALUES ( dProduto[Produto · Laboratório] ), [Venda Vitalis], DESC )
+			RETURN
+			    IF ( [Venda Vitalis] > 0, CONCATENATEX ( _top, dProduto[Produto · Laboratório], ", " ) )
+		displayFolder: 06 Ranking
+		lineageTag: cae8409f-5845-ca4a-95e3-88da3cb1c58b
+
+	/// Unidades em estoque na foto mais recente (03/04/2023).
+	measure 'Estoque Atual' = SUM ( fEstoque[Estoque] )
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: 6af85892-b35e-c973-e13e-29b4491a1295
+
+	/// SKUs com saldo positivo em estoque.
+	measure 'SKUs em Estoque' = CALCULATE ( DISTINCTCOUNT ( fEstoque[SKU] ), fEstoque[Estoque] > 0 )
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: ad06a8f4-2d6e-27a3-9229-6c529e53964f
+
+	/// Média mensal de unidades vendidas nos 6 últimos meses da base, independente do período selecionado.
+	measure 'Qtde Média Mensal Vitalis (6m)' =
+			VAR _ultimo = CALCULATE ( MAX ( dCalendario[Mês Índice] ), REMOVEFILTERS ( dCalendario ) )
+			RETURN
+			    DIVIDE (
+			        CALCULATE ( [Qtde Vitalis], REMOVEFILTERS ( dCalendario ), dCalendario[Mês Índice] > _ultimo - 6 ),
+			        6
+			    )
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: 167f0fa6-049a-07cf-d129-f373cd6ed687
+
+	/// Estoque atual dividido pela venda média mensal dos últimos 6 meses.
+	measure 'Cobertura (meses)' = DIVIDE ( [Estoque Atual], [Qtde Média Mensal Vitalis (6m)] )
+		formatString: #,0.0
+		displayFolder: 07 Estoque
+		lineageTag: dc17406e-27e4-df54-ed5e-9f406d400e2c
+
+	/// Cobertura em dias (meses × 30).
+	measure 'Cobertura (dias)' = [Cobertura (meses)] * 30
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: 8defc634-e4e9-5720-f314-f3498fbfdd7d
+
+	/// Venda média mensal × 12 dividida pelo estoque atual.
+	measure 'Giro Anualizado' = DIVIDE ( [Qtde Média Mensal Vitalis (6m)] * 12, [Estoque Atual] )
+		formatString: #,0.0
+		displayFolder: 07 Estoque
+		lineageTag: cd4473bd-140a-9b93-6195-00b832c314dd
+
+	/// Unidades em estoque de SKUs que não existem no cadastro IQVIA (sem leitura de mercado).
+	measure 'Estoque sem Cadastro IQVIA' = CALCULATE ( [Estoque Atual], fEstoque[Cadastro IQVIA] = "Sem cadastro IQVIA" )
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: f0f1fe3e-0863-f683-1d54-fe9a419a2614
+
+	/// SKUs com saldo em estoque e sem cadastro IQVIA.
+	measure 'SKUs sem Cadastro IQVIA' = CALCULATE ( [SKUs em Estoque], fEstoque[Cadastro IQVIA] = "Sem cadastro IQVIA" )
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: 6d897570-1139-5670-5e52-13076ca4851e
+
+	/// Parcela das unidades em estoque sem cadastro IQVIA.
+	measure '% Estoque sem Cadastro' = DIVIDE ( [Estoque sem Cadastro IQVIA], [Estoque Atual] )
+		formatString: 0.0%;-0.0%;0.0%
+		displayFolder: 07 Estoque
+		lineageTag: a1c72ab0-b964-5432-7be8-fd6669d9fdb9
+
+	/// Produtos cadastrados com saldo em estoque e sem nenhuma venda nos últimos 6 meses.
+	measure 'Produtos sem Giro' =
+			COUNTROWS (
+			    FILTER (
+			        SUMMARIZE ( fEstoque, dProduto[CD_FCC] ),
+			        NOT ISBLANK ( dProduto[CD_FCC] )
+			            && [Estoque Atual] > 0
+			            && [Qtde Média Mensal Vitalis (6m)] = 0
+			    )
+			)
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: acbbb02c-430a-ed5a-72bc-682b048b5c41
+
+	/// Unidades em estoque de produtos sem venda nos últimos 6 meses.
+	measure 'Estoque sem Giro' =
+			SUMX (
+			    FILTER (
+			        ADDCOLUMNS ( SUMMARIZE ( fEstoque, dProduto[CD_FCC] ), "@e", [Estoque Atual], "@q", [Qtde Média Mensal Vitalis (6m)] ),
+			        NOT ISBLANK ( dProduto[CD_FCC] ) && [@e] > 0 && [@q] = 0
+			    ),
+			    [@e]
+			)
+		formatString: #,0
+		displayFolder: 07 Estoque
+		lineageTag: c0e28588-90ae-bc3e-85ca-eba283021ac1
+
+	/// Ruptura (sem saldo e com venda), Sem giro (saldo sem venda em 6 meses), Baixo (< 0,5 mês), Adequado (0,5 a 3 meses) ou Excesso (> 3 meses).
+	measure 'Status Estoque' =
+			VAR _e = [Estoque Atual]
+			VAR _q = [Qtde Média Mensal Vitalis (6m)]
+			VAR _c = DIVIDE ( _e, _q )
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _e ) && _q = 0, BLANK (),
+			        _e <= 0 && _q > 0, "Ruptura",
+			        _q = 0, "Sem giro",
+			        _c < 0.5, "Baixo",
+			        _c <= 3, "Adequado",
+			        "Excesso"
+			    )
+		displayFolder: 07 Estoque
+		lineageTag: 283ba59f-8ce5-c9eb-c453-2de7947fd024
+
+	/// Valor médio por unidade vendido pela Vitalis.
+	measure 'Preço Médio Vitalis' = DIVIDE ( [Venda Vitalis], [Qtde Vitalis] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 08 Preço
+		lineageTag: d0f6240f-49b3-e720-931d-da4e270a30bd
+
+	/// Valor médio por unidade no mercado total.
+	measure 'Preço Médio Mercado' = DIVIDE ( [Venda Total Mercado], [Qtde Mercado] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 08 Preço
+		lineageTag: 6f0bf989-1c57-efd5-85de-9783cceb7b1f
+
+	/// Preço médio no período anterior equivalente.
+	measure 'Preço Médio Vitalis PA' = DIVIDE ( [Venda Vitalis PA], [Qtde Vitalis PA] )
+		formatString: "R$"\ #,0.00;-"R$"\ #,0.00;"R$"\ #,0.00
+		displayFolder: 08 Preço
+		lineageTag: 94893d52-1240-e2ac-9556-cb718d484170
+
+	/// Variação do preço médio frente ao período anterior equivalente.
+	measure 'Δ Preço %' =
+			VAR _atual = [Preço Médio Vitalis]
+			VAR _base = [Preço Médio Vitalis PA]
+			RETURN
+			    IF ( NOT ISBLANK ( _base ) && _base <> 0, DIVIDE ( _atual - _base, _base ) )
+		formatString: +0.0%;-0.0%;0.0%
+		displayFolder: 08 Preço
+		lineageTag: 811088d5-daa6-a27c-7f63-d32f4eed7318
+
+	/// Preço médio Vitalis ÷ preço médio do mercado × 100. Reflete também diferença de mix, não só de preço.
+	measure 'Índice de Preço' = DIVIDE ( [Preço Médio Vitalis], [Preço Médio Mercado] ) * 100
+		formatString: 0
+		displayFolder: 08 Preço
+		lineageTag: a8a3ca27-2d8f-31d2-fab1-01bc2a993393
+
+	/// Share da linha ÷ share de referência × 100. 100 = igual ao share médio da empresa.
+	measure 'Índice de Penetração' = DIVIDE ( [Share Vitalis], [Share Referência] ) * 100
+		formatString: 0
+		displayFolder: 09 Benchmark
+		lineageTag: c8050a52-c864-d26a-a5df-bf6d3d0d9022
+
+	/// Forte (índice de penetração ≥ 120), Fraco (< 80) ou Médio.
+	measure 'Posição Competitiva' =
+			VAR _i = [Índice de Penetração]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( [Venda Total Mercado] ), BLANK (), _i >= 120, "Forte", _i < 80, "Fraco", "Médio" )
+		displayFolder: 09 Benchmark
+		lineageTag: 58a86560-0960-49e8-376b-abac261fdbe5
+
+	/// Venda adicional que a Vitalis teria na linha se alcançasse nela o share de referência: mercado × (share de referência − share da linha). Em branco quando a linha já está acima da referência.
+	measure 'Potencial até Share Médio' =
+			VAR _gap = [Share Referência] - [Share Vitalis]
+			RETURN
+			    IF ( _gap > 0, _gap * [Venda Total Mercado] )
+		formatString: "R$"\ #,0;-"R$"\ #,0;"R$"\ #,0
+		displayFolder: 10 Inteligência
+		lineageTag: 0912d6b6-4d50-df1a-9aa9-9a4de88fceef
+
+	/// Alta oportunidade: share abaixo da referência e mercado crescendo. Oportunidade em mercado em queda: share abaixo da referência e mercado caindo. Defender posição: share na referência ou acima, mas perdendo share. Manter: demais casos.
+	measure 'Classe de Oportunidade' =
+			VAR _pot = [Potencial até Share Médio]
+			VAR _cm = [Cresc. Mercado %]
+			VAR _d = [Δ Share p.p.]
+			RETURN
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( [Venda Total Mercado] ), BLANK (),
+			        _pot > 0 && _cm > 0, "Alta oportunidade",
+			        _pot > 0, "Oportunidade em mercado em queda",
+			        _d <= - [Limiar Estabilidade p.p.], "Defender posição",
+			        "Manter"
+			    )
+		displayFolder: 10 Inteligência
+		lineageTag: 6675e316-e984-a304-f550-2fc98bca9d1a
+
+	/// Cor para formatação condicional do Δ Share.
+	measure 'Cor Δ Share' =
+			VAR _d = [Δ Share p.p.]
+			VAR _lim = [Limiar Estabilidade p.p.]
+			RETURN
+			    SWITCH ( TRUE (), ISBLANK ( _d ), "#98A2B3", _d >= _lim, "#16A36A", _d <= - _lim, "#D64545", "#98A2B3" )
+		isHidden
+		displayFolder: 99 Auxiliares
+		lineageTag: ed513f38-7860-05b4-d406-b2ddd592b9e1
+
+	/// Cor para formatação condicional do status de estoque. Excesso e ruptura são ambos negativos.
+	measure 'Cor Status Estoque' = SWITCH ( [Status Estoque], "Ruptura", "#D64545", "Baixo", "#F59E0B", "Adequado", "#16A36A", "Excesso", "#F59E0B", "Sem giro", "#D64545", "#98A2B3" )
+		isHidden
+		displayFolder: 99 Auxiliares
+		lineageTag: 12ae6122-79e3-94f4-9cbc-280179cc58b2
+
+	/// Cor para formatação condicional da classe de oportunidade.
+	measure 'Cor Classe de Oportunidade' = SWITCH ( [Classe de Oportunidade], "Alta oportunidade", "#0F9D8A", "Oportunidade em mercado em queda", "#F59E0B", "Defender posição", "#D64545", "#98A2B3" )
+		isHidden
+		displayFolder: 99 Auxiliares
+		lineageTag: 6e6c29cb-bca1-bced-7da1-d433bc0c46fc
+
+	/// Folha de estilos compartilhada pelas medidas HTML (design tokens do relatório).
+	measure _CSS = "<style>*{box-sizing:border-box;font-family:'Segoe UI',system-ui,sans-serif}html,body{margin:0;padding:0;background:transparent;color:#172033}.row{display:flex;gap:16px;height:calc(100vh - 8px);padding:2px;overflow:hidden}.kpi{flex:1;min-width:0;background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:14px 16px;box-shadow:0 1px 3px rgba(23,43,77,.06);display:flex;flex-direction:column;justify-content:space-between}.lb{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:#667085;font-weight:600}.vl{font-size:27px;font-weight:700;line-height:1.15;white-space:nowrap}.sb{font-size:12px;color:#667085}.dl{font-size:13px;font-weight:600}.pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:11px;font-weight:600;margin:0 6px 4px 0;white-space:nowrap}.bar{height:6px;background:#EEF1F5;border-radius:3px;overflow:hidden;margin-top:4px}.bar i{display:block;height:100%;border-radius:3px}.card{background:#fff;border:1px solid #E5E7EB;border-radius:14px;padding:16px 18px;height:100%;box-shadow:0 1px 3px rgba(23,43,77,.06);overflow:hidden}.h{font-size:13px;font-weight:600;color:#172B4D;margin-bottom:8px}.tx{font-size:13.5px;line-height:1.55;color:#344054}.tx b{color:#172033}.li{display:flex;gap:8px;font-size:12.5px;line-height:1.45;color:#344054;margin-top:6px}.dot{flex:0 0 8px;height:8px;border-radius:50%;margin-top:5px}.tt{background:#fff;padding:12px 14px;font-size:12px}.tt .nm{font-size:13px;font-weight:700;color:#172B4D}.g2{display:grid;grid-template-columns:1fr 1fr;gap:8px 16px;margin-top:8px}.g2 .k{font-size:10px;text-transform:uppercase;letter-spacing:.05em;color:#667085}.g2 .v{font-size:14px;font-weight:600}.rk{display:grid;grid-template-columns:18px 1fr auto;gap:2px 8px;align-items:center;font-size:12.5px;margin-top:9px}.gl{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:18px}.gc{background:#fff;border:1px solid #E5E7EB;border-radius:12px;padding:12px 14px}.gc .t{font-size:13px;font-weight:700;color:#172B4D}.gc .d{font-size:12px;line-height:1.45;color:#475467;margin-top:4px}.gh{font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#2563EB;font-weight:700;margin:0 0 8px}</style>"
+		isHidden
+		displayFolder: 99 Auxiliares
+		lineageTag: c6d15f79-631b-1618-6796-24ab0723b14a
+
+	/// Faixa de 6 cards da Visão Executiva: venda, mercado, share, índice de evolução, market gap e estoque.
+	measure 'HTML KPIs Executivo' =
+			VAR _v = [Venda Vitalis]
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _m = [Venda Total Mercado]
+			VAR _cm = [Cresc. Mercado %]
+			VAR _s = [Share Vitalis]
+			VAR _ds = [Δ Share p.p.]
+			VAR _ie = [Índice de Evolução]
+			VAR _ied = IF ( NOT ISBLANK ( _ie ), _ie - 100 )
+			VAR _gap = [Market Gap]
+			VAR _p1 = [Potencial +1 p.p.]
+			VAR _est = [Estoque Atual]
+			VAR _cob = [Cobertura (meses)]
+			VAR _barra = "<div class='bar'><i style='background:#2563EB;width:" & FORMAT ( MIN ( _s * 100 * 4, 100 ), "0", "en-US" ) & "%'></i></div>"
+			RETURN
+			    [_CSS] & "<div class='row'>"
+			        & "<div class='kpi'><div class='lb'>Venda Vitalis</div><div class='vl'>" & SWITCH ( TRUE (), ISBLANK ( _v ), "–", ABS ( _v ) >= 1E9, FORMAT ( _v / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _v ) >= 1E6, FORMAT ( _v / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _v ) >= 1E3, FORMAT ( _v / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _v, "\R\$ #,0", "pt-BR" ) ) & "</div>" & "" & "<div>" & "<span class='dl' style='color:" & SWITCH ( TRUE (), ISBLANK ( _cv ), "#98A2B3", _cv > 0, "#16A36A", _cv < 0, "#D64545", "#98A2B3" ) & "'>" & SWITCH ( TRUE (), ISBLANK ( _cv ), "", _cv > 0, "▲ ", _cv < 0, "▼ ", "▬ " ) & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</span> " & "<span class='sb'>vs. período anterior</span></div></div>"
+			        & "<div class='kpi'><div class='lb'>Mercado total</div><div class='vl'>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</div>" & "" & "<div>" & "<span class='dl' style='color:" & SWITCH ( TRUE (), ISBLANK ( _cm ), "#98A2B3", _cm > 0, "#16A36A", _cm < 0, "#D64545", "#98A2B3" ) & "'>" & SWITCH ( TRUE (), ISBLANK ( _cm ), "", _cm > 0, "▲ ", _cm < 0, "▼ ", "▬ " ) & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</span> " & "<span class='sb'>vs. período anterior</span></div></div>"
+			        & "<div class='kpi'><div class='lb'>Share Vitalis</div><div class='vl'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</div>" & _barra & "<div>" & "<span class='dl' style='color:" & SWITCH ( TRUE (), ISBLANK ( _ds ), "#98A2B3", _ds > 0, "#16A36A", _ds < 0, "#D64545", "#98A2B3" ) & "'>" & SWITCH ( TRUE (), ISBLANK ( _ds ), "", _ds > 0, "▲ ", _ds < 0, "▼ ", "▬ " ) & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</span> " & "<span class='sb'>vs. período anterior</span></div></div>"
+			        & "<div class='kpi'><div class='lb'>Índice de evolução</div><div class='vl'>" & IF ( ISBLANK ( _ie ), "–", FORMAT ( _ie, "0", "pt-BR" ) ) & "</div>" & "" & "<div>" & "<span class='dl' style='color:" & SWITCH ( TRUE (), ISBLANK ( _ied ), "#98A2B3", _ied > 0, "#16A36A", _ied < 0, "#D64545", "#98A2B3" ) & "'>" & SWITCH ( TRUE (), ISBLANK ( _ied ), "", _ied > 0, "▲ ", _ied < 0, "▼ ", "▬ " ) & IF ( ISBLANK ( _ie ), "", IF ( _ie >= 100, "acima do mercado", "abaixo do mercado" ) ) & "</span> " & "<span class='sb'></span></div></div>"
+			        & "<div class='kpi'><div class='lb'>Market gap</div><div class='vl'>" & SWITCH ( TRUE (), ISBLANK ( _gap ), "–", ABS ( _gap ) >= 1E9, FORMAT ( _gap / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _gap ) >= 1E6, FORMAT ( _gap / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _gap ) >= 1E3, FORMAT ( _gap / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _gap, "\R\$ #,0", "pt-BR" ) ) & "</div>" & "" & "<div>" & "<span class='sb'>" & "+1 p.p. de share = " & SWITCH ( TRUE (), ISBLANK ( _p1 ), "–", ABS ( _p1 ) >= 1E9, FORMAT ( _p1 / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _p1 ) >= 1E6, FORMAT ( _p1 / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _p1 ) >= 1E3, FORMAT ( _p1 / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _p1, "\R\$ #,0", "pt-BR" ) ) & "</span></div></div>"
+			        & "<div class='kpi'><div class='lb'>Estoque</div><div class='vl'>" & SWITCH ( TRUE (), ISBLANK ( _est ), "–", ABS ( _est ) >= 1E6, FORMAT ( _est / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _est ) >= 1E4, FORMAT ( _est / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _est, "#,0", "pt-BR" ) ) & " un" & "</div>" & "" & "<div>" & "<span class='sb'>" & "Cobertura de " & IF ( ISBLANK ( _cob ), "–", FORMAT ( _cob, "#,0.0", "pt-BR" ) ) & " meses" & "</span></div></div>"
+			        & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: 69501478-8dbd-df25-04e1-b5b72eee0ab0
+
+	/// Parágrafo de resumo do período, gerado a partir dos números do contexto: venda, share, variação e principais ganhos e perdas por categoria, tipo de farmácia e laboratório.
+	measure 'HTML Resumo Executivo' =
+			VAR _v = [Venda Vitalis]
+			VAR _m = [Venda Total Mercado]
+			VAR _s = [Share Vitalis]
+			VAR _ds = [Δ Share p.p.]
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _cm = [Cresc. Mercado %]
+			VAR _lim = [Limiar Estabilidade p.p.]
+			VAR _cat = FILTER ( ADDCOLUMNS ( VALUES ( dProduto[Categoria] ), "@d", [Δ Share p.p.] ), NOT ISBLANK ( [@d] ) )
+			VAR _catMais = TOPN ( 1, _cat, [@d], DESC )
+			VAR _catMenos = TOPN ( 1, _cat, [@d], ASC )
+			VAR _tf = FILTER ( ADDCOLUMNS ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ), "@d", [Δ Share p.p.] ), NOT ISBLANK ( [@d] ) )
+			VAR _tfMais = TOPN ( 1, _tf, [@d], DESC )
+			VAR _tfMenos = TOPN ( 1, _tf, [@d], ASC )
+			VAR _lab = FILTER ( ADDCOLUMNS ( VALUES ( dProduto[Laboratório] ), "@d", [Δ Venda Vitalis R$] ), NOT ISBLANK ( [@d] ) )
+			VAR _labMais = TOPN ( 1, _lab, [@d], DESC )
+			VAR _labMenos = TOPN ( 1, _lab, [@d], ASC )
+			VAR _dCatMais = MAXX ( _catMais, [@d] )
+			VAR _dCatMenos = MINX ( _catMenos, [@d] )
+			VAR _dTfMais = MAXX ( _tfMais, [@d] )
+			VAR _dTfMenos = MINX ( _tfMenos, [@d] )
+			VAR _dLabMais = MAXX ( _labMais, [@d] )
+			VAR _dLabMenos = MINX ( _labMenos, [@d] )
+			VAR _abertura =
+			    "No período selecionado, a Vitalis movimentou <b>" & SWITCH ( TRUE (), ISBLANK ( _v ), "–", ABS ( _v ) >= 1E9, FORMAT ( _v / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _v ) >= 1E6, FORMAT ( _v / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _v ) >= 1E3, FORMAT ( _v / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _v, "\R\$ #,0", "pt-BR" ) ) & "</b>, o equivalente a <b>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</b> de um mercado de <b>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</b>."
+			VAR _comparacao =
+			    IF (
+			        ISBLANK ( _ds ),
+			        " A base não cobre um período anterior equivalente, então não há comparação de share para esta seleção.",
+			        " A participação "
+			            & SWITCH ( TRUE (), _ds >= _lim, "avançou ", _ds <= - _lim, "recuou ", "ficou estável, com " )
+			            & "<b style='color:" & SWITCH ( TRUE (), ISBLANK ( _ds ), "#98A2B3", _ds > 0, "#16A36A", _ds < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</b> frente ao período anterior: a venda Vitalis variou <b>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b> e o mercado <b>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b>."
+			    )
+			VAR _ganhos =
+			    IF (
+			        NOT ISBLANK ( _ds ) && ( _dCatMais > 0 || _dTfMais > 0 || _dLabMais > 0 ),
+			        "<div class='li'><span class='dot' style='background:#16A36A'></span><span><b>Onde ganhou:</b> "
+			            & IF ( _dCatMais > 0, "categoria " & MAXX ( _catMais, dProduto[Categoria] ) & " (" & IF ( ISBLANK ( _dCatMais ), "–", FORMAT ( _dCatMais, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & ")", "" )
+			            & IF ( _dCatMais > 0 && _dTfMais > 0, "; ", "" )
+			            & IF ( _dTfMais > 0, "canal " & MAXX ( _tfMais, dTipoFarmacia[Tipo de Farmácia] ) & " (" & IF ( ISBLANK ( _dTfMais ), "–", FORMAT ( _dTfMais, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & ")", "" )
+			            & IF ( _dLabMais > 0, IF ( _dCatMais > 0 || _dTfMais > 0, "; ", "" ) & "laboratório " & MAXX ( _labMais, dProduto[Laboratório] ) & " (+" & SWITCH ( TRUE (), ISBLANK ( _dLabMais ), "–", ABS ( _dLabMais ) >= 1E9, FORMAT ( _dLabMais / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _dLabMais ) >= 1E6, FORMAT ( _dLabMais / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _dLabMais ) >= 1E3, FORMAT ( _dLabMais / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _dLabMais, "\R\$ #,0", "pt-BR" ) ) & " em venda)", "" )
+			            & ".</span></div>",
+			        ""
+			    )
+			VAR _perdas =
+			    IF (
+			        NOT ISBLANK ( _ds ) && ( _dCatMenos < 0 || _dTfMenos < 0 || _dLabMenos < 0 ),
+			        "<div class='li'><span class='dot' style='background:#D64545'></span><span><b>Pontos de atenção:</b> "
+			            & IF ( _dCatMenos < 0, "categoria " & MINX ( _catMenos, dProduto[Categoria] ) & " (" & IF ( ISBLANK ( _dCatMenos ), "–", FORMAT ( _dCatMenos, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & ")", "" )
+			            & IF ( _dCatMenos < 0 && _dTfMenos < 0, "; ", "" )
+			            & IF ( _dTfMenos < 0, "canal " & MINX ( _tfMenos, dTipoFarmacia[Tipo de Farmácia] ) & " (" & IF ( ISBLANK ( _dTfMenos ), "–", FORMAT ( _dTfMenos, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & ")", "" )
+			            & IF ( _dLabMenos < 0, IF ( _dCatMenos < 0 || _dTfMenos < 0, "; ", "" ) & "laboratório " & MINX ( _labMenos, dProduto[Laboratório] ) & " (" & SWITCH ( TRUE (), ISBLANK ( _dLabMenos ), "–", ABS ( _dLabMenos ) >= 1E9, FORMAT ( _dLabMenos / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _dLabMenos ) >= 1E6, FORMAT ( _dLabMenos / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _dLabMenos ) >= 1E3, FORMAT ( _dLabMenos / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _dLabMenos, "\R\$ #,0", "pt-BR" ) ) & " em venda)", "" )
+			            & ".</span></div>",
+			        ""
+			    )
+			RETURN
+			    [_CSS] & "<div class='card'><div class='h'>Resumo do período</div><div class='tx'>" & _abertura & _comparacao & "</div>" & _ganhos & _perdas & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: 5405d679-e91e-2c8b-57f7-eecef861dd1c
+
+	/// Card do produto com maior potencial: mercado × share de referência − venda Vitalis. Mostra mercado, share, crescimento do mercado e o motivo da indicação.
+	measure 'HTML Oportunidade' =
+			VAR _ref = [Share Referência]
+			VAR _tab = ADDCOLUMNS ( VALUES ( dProduto[Produto · Laboratório] ), "@m", [Venda Total Mercado], "@v", [Venda Vitalis] )
+			VAR _top = TOPN ( 1, ADDCOLUMNS ( _tab, "@p", [@m] * _ref - [@v] ), [@p], DESC )
+			VAR _nome = MAXX ( _top, dProduto[Produto · Laboratório] )
+			VAR _m = MAXX ( _top, [@m] )
+			VAR _v = MAXX ( _top, [@v] )
+			VAR _p = MAXX ( _top, [@p] )
+			VAR _s = DIVIDE ( _v, _m ) + 0
+			VAR _cm = CALCULATE ( [Cresc. Mercado %], TREATAS ( { _nome }, dProduto[Produto · Laboratório] ) )
+			VAR _motivo = "Mercado relevante com share abaixo da média" & IF ( _cm > 0, " e mercado em crescimento", IF ( _cm < 0, ", mas mercado em queda", "" ) )
+			RETURN
+			    [_CSS] & "<div class='card' style='border-left:4px solid #0F9D8A'>"
+			        & "<span class='pill' style='background:#E6F6F3;color:#0B7A6B'>MAIOR OPORTUNIDADE</span>"
+			        & "<div class='h' style='margin-top:6px;font-size:15px'>" & _nome & "</div>"
+			        & "<div class='g2'>"
+			        & "<div><div class='k'>Mercado</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Share Vitalis</div><div class='v'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & " <span class='sb'>média " & IF ( ISBLANK ( _ref ), "–", FORMAT ( _ref, "0.00%", "pt-BR" ) ) & "</span></div></div>"
+			        & "<div><div class='k'>Crescimento do mercado</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _cm ), "#98A2B3", _cm > 0, "#16A36A", _cm < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Potencial estimado</div><div class='v' style='color:#0B7A6B'>" & SWITCH ( TRUE (), ISBLANK ( _p ), "–", ABS ( _p ) >= 1E9, FORMAT ( _p / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _p ) >= 1E6, FORMAT ( _p / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _p ) >= 1E3, FORMAT ( _p / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _p, "\R\$ #,0", "pt-BR" ) ) & "</div></div>"
+			        & "</div><div class='sb' style='margin-top:10px'>" & _motivo & ".</div></div>"
+		displayFolder: 90 HTML
+		lineageTag: ffb7a6ae-285c-01f9-f866-253c1d5031a0
+
+	/// Top 5 laboratórios por venda Vitalis, com microbarra, share e variação de share.
+	measure 'HTML Ranking Laboratórios' =
+			VAR _tab =
+			    TOPN ( 5, ADDCOLUMNS ( VALUES ( dProduto[Laboratório] ), "@v", [Venda Vitalis], "@s", [Share Vitalis], "@d", [Δ Share p.p.] ), [@v], DESC )
+			VAR _max = MAXX ( _tab, [@v] )
+			VAR _linhas =
+			    CONCATENATEX (
+			        _tab,
+			        "<div class='rk'><span class='sb'>" & RANKX ( _tab, [@v],, DESC ) & "</span>"
+			            & "<span style='overflow:hidden;text-overflow:ellipsis;white-space:nowrap'><b>" & dProduto[Laboratório] & "</b></span>"
+			            & "<span><b>" & SWITCH ( TRUE (), ISBLANK ( [@v] ), "–", ABS ( [@v] ) >= 1E9, FORMAT ( [@v] / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( [@v] ) >= 1E6, FORMAT ( [@v] / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( [@v] ) >= 1E3, FORMAT ( [@v] / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( [@v], "\R\$ #,0", "pt-BR" ) ) & "</b> <span class='sb'>" & IF ( ISBLANK ( [@s] ), "–", FORMAT ( [@s], "0.0%", "pt-BR" ) ) & "</span> <span style='color:" & SWITCH ( TRUE (), ISBLANK ( [@d] ), "#98A2B3", [@d] > 0, "#16A36A", [@d] < 0, "#D64545", "#98A2B3" ) & ";font-weight:600'>" & IF ( ISBLANK ( [@d] ), "–", FORMAT ( [@d], "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</span></span>"
+			            & "<span></span><div class='bar' style='grid-column:2 / 4;margin:0'><i style='background:#2563EB;width:" & FORMAT ( DIVIDE ( [@v], _max ) * 100, "0", "en-US" ) & "%'></i></div></div>",
+			        "",
+			        [@v], DESC
+			    )
+			RETURN
+			    [_CSS] & "<div class='card'><div class='h'>Top 5 laboratórios por venda Vitalis</div>" & _linhas & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: ba35476c-3a04-456a-622a-a22cf80dac55
+
+	/// Card de alerta do estoque: SKUs sem cadastro IQVIA, produtos sem giro e parcela do estoque sem leitura de mercado.
+	measure 'HTML Alerta Estoque' =
+			VAR _sku = [SKUs sem Cadastro IQVIA]
+			VAR _un = [Estoque sem Cadastro IQVIA]
+			VAR _pc = [% Estoque sem Cadastro]
+			VAR _sg = [Produtos sem Giro]
+			VAR _usg = [Estoque sem Giro]
+			VAR _tot = [Estoque Atual]
+			RETURN
+			    [_CSS] & "<div class='card' style='border-left:4px solid #F59E0B'>"
+			        & "<span class='pill' style='background:#FEF3C7;color:#92400E'>ATENÇÃO</span>"
+			        & "<div class='li'><span class='dot' style='background:#F59E0B'></span><span><b>" & SWITCH ( TRUE (), ISBLANK ( _sku ), "–", ABS ( _sku ) >= 1E6, FORMAT ( _sku / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _sku ) >= 1E4, FORMAT ( _sku / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _sku, "#,0", "pt-BR" ) ) & " SKUs</b> em estoque não existem no cadastro IQVIA: <b>" & SWITCH ( TRUE (), ISBLANK ( _un ), "–", ABS ( _un ) >= 1E6, FORMAT ( _un / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _un ) >= 1E4, FORMAT ( _un / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _un, "#,0", "pt-BR" ) ) & " unidades</b> (" & IF ( ISBLANK ( _pc ), "–", FORMAT ( _pc, "0.0%", "pt-BR" ) ) & " do estoque) sem leitura de mercado.</span></div>"
+			        & "<div class='li'><span class='dot' style='background:#D64545'></span><span><b>" & SWITCH ( TRUE (), ISBLANK ( _sg ), "–", ABS ( _sg ) >= 1E6, FORMAT ( _sg / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _sg ) >= 1E4, FORMAT ( _sg / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _sg, "#,0", "pt-BR" ) ) & " produtos</b> têm saldo e nenhuma venda nos últimos 6 meses: <b>" & SWITCH ( TRUE (), ISBLANK ( _usg ), "–", ABS ( _usg ) >= 1E6, FORMAT ( _usg / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _usg ) >= 1E4, FORMAT ( _usg / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _usg, "#,0", "pt-BR" ) ) & " unidades</b> (" & IF ( _tot > 0, FORMAT ( DIVIDE ( _usg, _tot ), "0.0%", "pt-BR" ), "–" ) & " do estoque).</span></div>"
+			        & "<div class='sb' style='margin-top:10px'>Foto de estoque de 03/04/2023; venda média dos últimos 6 meses da base.</div></div>"
+		displayFolder: 90 HTML
+		lineageTag: 6812a8e8-331e-a1d5-6e57-048512676566
+
+	/// Frase de leitura do share no contexto: nível, variação e relação entre crescimento próprio e do mercado.
+	measure 'HTML Insight Share' =
+			VAR _s = [Share Vitalis]
+			VAR _ds = [Δ Share p.p.]
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _cm = [Cresc. Mercado %]
+			VAR _lim = [Limiar Estabilidade p.p.]
+			VAR _frase =
+			    SWITCH (
+			        TRUE (),
+			        ISBLANK ( _ds ), "Share de <b>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</b>. Não há período anterior equivalente na base para medir variação.",
+			        _cm > 0 && _cv < 0, "Apesar do crescimento de mercado de <b>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b>, a venda Vitalis variou <b>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b>, resultando em <b style='color:#D64545'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</b> de participação.",
+			        _ds >= _lim, "A Vitalis ganhou <b style='color:#16A36A'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</b> de participação: cresceu <b>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b> contra <b>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b> do mercado.",
+			        _ds <= - _lim, "A Vitalis perdeu <b style='color:#D64545'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</b> de participação: variou <b>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b> contra <b>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b> do mercado.",
+			        "Participação estável em <b>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</b> (" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "): venda Vitalis <b>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b>, mercado <b>" & IF ( ISBLANK ( _cm ), "–", FORMAT ( _cm, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</b>."
+			    )
+			RETURN
+			    [_CSS] & "<div class='card' style='border-left:4px solid #2563EB'><div class='h'>Leitura do share</div><div class='tx'>" & _frase & "</div></div>"
+		displayFolder: 90 HTML
+		lineageTag: d5acff76-89a4-77fb-8f25-97c3719710d5
+
+	/// Tooltip do produto: laboratório, categoria, venda, mercado, share atual e anterior, variação, preço médio, ranking, share mensal nos 24 meses e status de share.
+	measure 'HTML Tooltip Produto' =
+			VAR _v = [Venda Vitalis]
+			VAR _m = [Venda Total Mercado]
+			VAR _s = [Share Vitalis]
+			VAR _sp = [Share Vitalis PA]
+			VAR _ds = [Δ Share p.p.]
+			VAR _pm = [Preço Médio Vitalis]
+			VAR _r = [Ranking Produto]
+			VAR _ind = [Indicador Ranking Produto]
+			VAR _classe = [Status Share]
+			VAR _serie = ADDCOLUMNS ( ALL ( dCalendario[Mês Índice] ), "@y", CALCULATE ( [Share Vitalis], ALLEXCEPT ( dCalendario, dCalendario[Mês Índice] ) ) )
+			VAR _ymax = MAXX ( _serie, [@y] )
+			VAR _nmes = COUNTROWS ( _serie )
+			VAR _pontos =
+			    CONCATENATEX (
+			        _serie,
+			        FORMAT ( DIVIDE ( dCalendario[Mês Índice] - 1, _nmes - 1 ) * 280, "0.0", "en-US" ) & "," & FORMAT ( 38 - DIVIDE ( [@y], _ymax, 0 ) * 34, "0.0", "en-US" ),
+			        " ",
+			        dCalendario[Mês Índice], ASC
+			    )
+			VAR _spark = "<svg viewBox='0 0 280 40' width='100%' height='40' preserveAspectRatio='none'><polyline fill='none' stroke='#2563EB' stroke-width='2' points='" & _pontos & "'/></svg>"
+			RETURN
+			    [_CSS] & "<div class='tt'><div class='nm'>" & SELECTEDVALUE ( dProduto[Produto], "Vários produtos" ) & "</div>"
+			        & "<div class='sb'>" & SELECTEDVALUE ( dProduto[Laboratório], "Vários laboratórios" ) & " · " & SELECTEDVALUE ( dProduto[Categoria], "Várias categorias" ) & "</div>"
+			        & "<div class='g2'>"
+			        & "<div><div class='k'>Venda Vitalis</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _v ), "–", ABS ( _v ) >= 1E9, FORMAT ( _v / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _v ) >= 1E6, FORMAT ( _v / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _v ) >= 1E3, FORMAT ( _v / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _v, "\R\$ #,0", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Mercado</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Share</div><div class='v'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & " <span class='sb'>ant. " & IF ( ISBLANK ( _sp ), "–", FORMAT ( _sp, "0.00%", "pt-BR" ) ) & "</span>" & "</div></div>" & "<div><div class='k'>Δ Share</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _ds ), "#98A2B3", _ds > 0, "#16A36A", _ds < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</div></div>"
+			        & "<div><div class='k'>Preço médio</div><div class='v'>" & IF ( ISBLANK ( _pm ), "–", FORMAT ( _pm, "\R\$ #,0.00", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Ranking</div><div class='v'>" & IF ( ISBLANK ( _r ), "–", _r & "º " ) & " <span class='sb'>" & _ind & "</span>" & "</div></div>"
+			        & "</div><div class='k' style='font-size:10px;color:#667085;margin-top:8px'>SHARE MENSAL · 24 MESES</div>" & _spark
+			        & IF ( ISBLANK ( _classe ), "", "<span class='pill' style='background:#EEF4FF;color:#1D4ED8;margin-top:6px'>" & _classe & "</span>" )
+			        & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: f9177d0c-3f0d-5372-325d-8fd303ef9e4e
+
+	/// Tooltip do laboratório: venda, mercado, share, variação, produtos vendidos, principal produto, concentração e tendência.
+	measure 'HTML Tooltip Laboratório' =
+			VAR _v = [Venda Vitalis]
+			VAR _m = [Venda Total Mercado]
+			VAR _s = [Share Vitalis]
+			VAR _ds = [Δ Share p.p.]
+			VAR _qp = [Qtd Produtos Vitalis]
+			VAR _qm = [Qtd Produtos Mercado]
+			VAR _top = [Top Produto]
+			VAR _c5 = [Top 5 Produtos %]
+			VAR _tend = [Tendência]
+			VAR _serie = ADDCOLUMNS ( ALL ( dCalendario[Mês Índice] ), "@y", CALCULATE ( [Venda Vitalis], ALLEXCEPT ( dCalendario, dCalendario[Mês Índice] ) ) )
+			VAR _ymax = MAXX ( _serie, [@y] )
+			VAR _nmes = COUNTROWS ( _serie )
+			VAR _pontos =
+			    CONCATENATEX (
+			        _serie,
+			        FORMAT ( DIVIDE ( dCalendario[Mês Índice] - 1, _nmes - 1 ) * 280, "0.0", "en-US" ) & "," & FORMAT ( 38 - DIVIDE ( [@y], _ymax, 0 ) * 34, "0.0", "en-US" ),
+			        " ",
+			        dCalendario[Mês Índice], ASC
+			    )
+			VAR _spark = "<svg viewBox='0 0 280 40' width='100%' height='40' preserveAspectRatio='none'><polyline fill='none' stroke='#2563EB' stroke-width='2' points='" & _pontos & "'/></svg>"
+			RETURN
+			    [_CSS] & "<div class='tt'><div class='nm'>" & SELECTEDVALUE ( dProduto[Laboratório], "Vários laboratórios" ) & "</div>"
+			        & "<div class='g2'>"
+			        & "<div><div class='k'>Venda Vitalis</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _v ), "–", ABS ( _v ) >= 1E9, FORMAT ( _v / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _v ) >= 1E6, FORMAT ( _v / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _v ) >= 1E3, FORMAT ( _v / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _v, "\R\$ #,0", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Mercado</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Share</div><div class='v'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Δ Share</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _ds ), "#98A2B3", _ds > 0, "#16A36A", _ds < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</div></div>"
+			        & "<div><div class='k'>Produtos vendidos</div><div class='v'>" & IF ( ISBLANK ( _qp ), "0", FORMAT ( _qp, "#,0", "pt-BR" ) ) & " <span class='sb'>de " & FORMAT ( _qm, "#,0", "pt-BR" ) & "</span>" & "</div></div>" & "<div><div class='k'>Concentração Top 5</div><div class='v'>" & IF ( ISBLANK ( _c5 ), "–", FORMAT ( _c5, "0.0%", "pt-BR" ) ) & "</div></div>"
+			        & "</div><div class='sb' style='margin-top:8px'>Principal produto: <b>" & IF ( ISBLANK ( _top ), "–", _top ) & "</b></div>"
+			        & "<div class='k' style='font-size:10px;color:#667085;margin-top:8px'>VENDA MENSAL · 24 MESES · TENDÊNCIA " & UPPER ( _tend ) & "</div>" & _spark
+			        & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: 113e2c35-b9c1-e1dc-0b9f-5e363f2b0a37
+
+	/// Tooltip de estoque do produto: saldo, venda média, cobertura, status, share, ranking, crescimento e tendência.
+	measure 'HTML Tooltip Estoque' =
+			VAR _e = [Estoque Atual]
+			VAR _q = [Qtde Média Mensal Vitalis (6m)]
+			VAR _c = [Cobertura (meses)]
+			VAR _st = [Status Estoque]
+			VAR _s = [Share Vitalis]
+			VAR _r = [Ranking Produto]
+			VAR _cv = [Cresc. Vitalis %]
+			VAR _pot = [Tendência]
+			VAR _cor = [Cor Status Estoque]
+			RETURN
+			    [_CSS] & "<div class='tt'><div class='nm'>" & SELECTEDVALUE ( dProduto[Produto · Laboratório], "Vários produtos" ) & "</div>"
+			        & "<span class='pill' style='margin-top:6px;color:#fff;background:" & _cor & "'>" & IF ( ISBLANK ( _st ), "Sem estoque", _st ) & "</span>"
+			        & "<div class='g2'>"
+			        & "<div><div class='k'>Estoque atual</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _e ), "–", ABS ( _e ) >= 1E6, FORMAT ( _e / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _e ) >= 1E4, FORMAT ( _e / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _e, "#,0", "pt-BR" ) ) & " un" & "</div></div>" & "<div><div class='k'>Venda média/mês</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _q ), "–", ABS ( _q ) >= 1E6, FORMAT ( _q / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _q ) >= 1E4, FORMAT ( _q / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _q, "#,0", "pt-BR" ) ) & " un" & "</div></div>"
+			        & "<div><div class='k'>Cobertura</div><div class='v'>" & IF ( ISBLANK ( _c ), "–", FORMAT ( _c, "#,0.0", "pt-BR" ) ) & " meses" & "</div></div>" & "<div><div class='k'>Share</div><div class='v'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Ranking</div><div class='v'>" & IF ( ISBLANK ( _r ), "–", _r & "º" ) & "</div></div>" & "<div><div class='k'>Crescimento</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _cv ), "#98A2B3", _cv > 0, "#16A36A", _cv < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _cv ), "–", FORMAT ( _cv, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</div></div>"
+			        & "</div><div class='sb' style='margin-top:8px'>Tendência de venda: <b>" & IF ( ISBLANK ( _pot ), "–", _pot ) & "</b></div></div>"
+		displayFolder: 90 HTML
+		lineageTag: 60052a16-fe4a-49cf-4754-4036583bda79
+
+	/// Tooltip temporal: venda, mercado, share, variações mensal e anual, preço médio e quantidade do mês sob o cursor.
+	measure 'HTML Tooltip Período' =
+			VAR _v = [Venda Vitalis]
+			VAR _m = [Venda Total Mercado]
+			VAR _s = [Share Vitalis]
+			VAR _ds = [Δ Share p.p.]
+			VAR _mom = [MoM %]
+			VAR _yoy = [YoY %]
+			VAR _pm = [Preço Médio Vitalis]
+			VAR _q = [Qtde Vitalis]
+			RETURN
+			    [_CSS] & "<div class='tt'><div class='nm'>" & SELECTEDVALUE ( dCalendario[Mês/Ano], "Período selecionado" ) & "</div>"
+			        & "<div class='g2'>"
+			        & "<div><div class='k'>Venda Vitalis</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _v ), "–", ABS ( _v ) >= 1E9, FORMAT ( _v / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _v ) >= 1E6, FORMAT ( _v / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _v ) >= 1E3, FORMAT ( _v / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _v, "\R\$ #,0", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Mercado</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _m ), "–", ABS ( _m ) >= 1E9, FORMAT ( _m / 1E9, "\R\$ #,0.00", "pt-BR" ) & " bi", ABS ( _m ) >= 1E6, FORMAT ( _m / 1E6, "\R\$ #,0.0", "pt-BR" ) & " mi", ABS ( _m ) >= 1E3, FORMAT ( _m / 1E3, "\R\$ #,0", "pt-BR" ) & " mil", FORMAT ( _m, "\R\$ #,0", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Share</div><div class='v'>" & IF ( ISBLANK ( _s ), "–", FORMAT ( _s, "0.00%", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Δ Share vs. anterior</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _ds ), "#98A2B3", _ds > 0, "#16A36A", _ds < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _ds ), "–", FORMAT ( _ds, "+0.00;-0.00;0.00", "pt-BR" ) & " p.p." ) & "</div></div>"
+			        & "<div><div class='k'>vs. mês anterior</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _mom ), "#98A2B3", _mom > 0, "#16A36A", _mom < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _mom ), "–", FORMAT ( _mom, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>vs. ano anterior</div><div class='v' style='color:" & SWITCH ( TRUE (), ISBLANK ( _yoy ), "#98A2B3", _yoy > 0, "#16A36A", _yoy < 0, "#D64545", "#98A2B3" ) & "'>" & IF ( ISBLANK ( _yoy ), "–", FORMAT ( _yoy, "+0.0%;-0.0%;0.0%", "pt-BR" ) ) & "</div></div>"
+			        & "<div><div class='k'>Preço médio</div><div class='v'>" & IF ( ISBLANK ( _pm ), "–", FORMAT ( _pm, "\R\$ #,0.00", "pt-BR" ) ) & "</div></div>" & "<div><div class='k'>Quantidade</div><div class='v'>" & SWITCH ( TRUE (), ISBLANK ( _q ), "–", ABS ( _q ) >= 1E6, FORMAT ( _q / 1E6, "#,0.0", "pt-BR" ) & " mi", ABS ( _q ) >= 1E4, FORMAT ( _q / 1E3, "#,0", "pt-BR" ) & " mil", FORMAT ( _q, "#,0", "pt-BR" ) ) & " un" & "</div></div>"
+			        & "</div></div>"
+		displayFolder: 90 HTML
+		lineageTag: 49744024-7e5b-8994-44b0-5a6840c094fa
+
+	/// Texto com o contexto de filtros em vigor: período, estados, categoria, tipo de farmácia e laboratório.
+	measure 'Filtros Aplicados' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _ini = LOOKUPVALUE ( dCalendario[Mês/Ano], dCalendario[Mês Índice], _min )
+			VAR _fim = LOOKUPVALUE ( dCalendario[Mês/Ano], dCalendario[Mês Índice], _max )
+			VAR _periodo = IF ( _min = _max, _ini, _ini & " a " & _fim )
+			VAR _uf = IF (
+			        ISFILTERED ( dEstado ),
+			        IF ( COUNTROWS ( VALUES ( dEstado[UF] ) ) <= 4, CONCATENATEX ( VALUES ( dEstado[UF] ), dEstado[UF], ", " ), COUNTROWS ( VALUES ( dEstado[UF] ) ) & " estados" ),
+			        "Todos os estados"
+			    )
+			VAR _cat = IF (
+			        ISFILTERED ( dProduto[Categoria] ),
+			        IF ( COUNTROWS ( VALUES ( dProduto[Categoria] ) ) <= 2, CONCATENATEX ( VALUES ( dProduto[Categoria] ), dProduto[Categoria], ", " ), COUNTROWS ( VALUES ( dProduto[Categoria] ) ) & " categorias" ),
+			        "Todas as categorias"
+			    )
+			VAR _tipo = IF (
+			        ISFILTERED ( dTipoFarmacia ),
+			        IF ( COUNTROWS ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ) ) <= 2, CONCATENATEX ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ), dTipoFarmacia[Tipo de Farmácia], ", " ), COUNTROWS ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ) ) & " tipos" ),
+			        "Todos os tipos de farmácia"
+			    )
+			VAR _lab = IF (
+			        ISFILTERED ( dProduto[Laboratório] ),
+			        IF ( COUNTROWS ( VALUES ( dProduto[Laboratório] ) ) <= 2, CONCATENATEX ( VALUES ( dProduto[Laboratório] ), dProduto[Laboratório], ", " ), COUNTROWS ( VALUES ( dProduto[Laboratório] ) ) & " laboratórios" ),
+			        "Todos os laboratórios"
+			    )
+			RETURN
+			    _periodo & " • " & _uf & " • " & _cat & " • " & _tipo & " • " & _lab
+		displayFolder: 90 HTML
+		lineageTag: 24ae682c-9f76-5b3e-a728-7d12dc29eb58
+
+	/// Contexto de filtros em vigor, em formato de pílulas, para o cabeçalho das páginas.
+	measure 'HTML Filtros Aplicados' =
+			VAR _min = MIN ( dCalendario[Mês Índice] )
+			VAR _max = MAX ( dCalendario[Mês Índice] )
+			VAR _ini = LOOKUPVALUE ( dCalendario[Mês/Ano], dCalendario[Mês Índice], _min )
+			VAR _fim = LOOKUPVALUE ( dCalendario[Mês/Ano], dCalendario[Mês Índice], _max )
+			VAR _periodo = IF ( _min = _max, _ini, _ini & " a " & _fim )
+			VAR _uf = IF (
+			        ISFILTERED ( dEstado ),
+			        IF ( COUNTROWS ( VALUES ( dEstado[UF] ) ) <= 4, CONCATENATEX ( VALUES ( dEstado[UF] ), dEstado[UF], ", " ), COUNTROWS ( VALUES ( dEstado[UF] ) ) & " estados" ),
+			        "Todos os estados"
+			    )
+			VAR _cat = IF (
+			        ISFILTERED ( dProduto[Categoria] ),
+			        IF ( COUNTROWS ( VALUES ( dProduto[Categoria] ) ) <= 2, CONCATENATEX ( VALUES ( dProduto[Categoria] ), dProduto[Categoria], ", " ), COUNTROWS ( VALUES ( dProduto[Categoria] ) ) & " categorias" ),
+			        "Todas as categorias"
+			    )
+			VAR _tipo = IF (
+			        ISFILTERED ( dTipoFarmacia ),
+			        IF ( COUNTROWS ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ) ) <= 2, CONCATENATEX ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ), dTipoFarmacia[Tipo de Farmácia], ", " ), COUNTROWS ( VALUES ( dTipoFarmacia[Tipo de Farmácia] ) ) & " tipos" ),
+			        "Todos os tipos de farmácia"
+			    )
+			VAR _lab = IF (
+			        ISFILTERED ( dProduto[Laboratório] ),
+			        IF ( COUNTROWS ( VALUES ( dProduto[Laboratório] ) ) <= 2, CONCATENATEX ( VALUES ( dProduto[Laboratório] ), dProduto[Laboratório], ", " ), COUNTROWS ( VALUES ( dProduto[Laboratório] ) ) & " laboratórios" ),
+			        "Todos os laboratórios"
+			    )
+			VAR _p = "<span class='pill' style='background:rgba(255,255,255,.14);color:#fff'>"
+			RETURN
+			    [_CSS] & "<div style='text-align:right;padding-top:6px;white-space:nowrap;overflow:hidden'>" & _p & _periodo & "</span>" & _p & _uf & "</span>" & _p & _cat & "</span>" & _p & _tipo & "</span>" & _p & _lab & "</span></div>"
+		displayFolder: 90 HTML
+		lineageTag: 571ff7dd-9ac7-9580-6c0a-3485401777fe
+
+	/// Título dinâmico do gráfico de evolução de share.
+	measure 'Título Evolução Share' = "Share Vitalis mês a mês — " & [Filtros Aplicados]
+		displayFolder: 99 Auxiliares
+		lineageTag: 949b9105-1925-0bfc-6831-66d9abe307c7
+
+	/// Título dinâmico da página de detalhe de produto.
+	measure 'Título Detalhe Produto' = SELECTEDVALUE ( dProduto[Produto · Laboratório], "Produtos selecionados" ) & " — " & [Filtros Aplicados]
+		displayFolder: 99 Auxiliares
+		lineageTag: da545b04-8853-bd03-76f5-38a7430d8262
+
+	/// Título dinâmico da página de detalhe de laboratório.
+	measure 'Título Detalhe Laboratório' = SELECTEDVALUE ( dProduto[Laboratório], "Laboratórios selecionados" ) & " — " & [Filtros Aplicados]
+		displayFolder: 99 Auxiliares
+		lineageTag: 43e167bb-0fa7-1c12-e3e6-166fe18053a0
+
+	/// Título dinâmico da página de detalhe de estado.
+	measure 'Título Detalhe Estado' = SELECTEDVALUE ( dEstado[Estado], "Estados selecionados" ) & " — " & [Filtros Aplicados]
+		displayFolder: 99 Auxiliares
+		lineageTag: aff0ef5e-7a8a-7843-4af7-ae0231a77873
+
+	/// Glossário em cards, agrupado por tema, lido da tabela dGlossario.
+	measure 'HTML Definições' =
+			VAR _grupos = ADDCOLUMNS ( VALUES ( dGlossario[Grupo] ), "@o", CALCULATE ( MIN ( dGlossario[Ordem] ) ) )
+			VAR _html =
+			    CONCATENATEX (
+			        _grupos,
+			        "<div class='gh'>" & dGlossario[Grupo] & "</div><div class='gl'>"
+			            & CALCULATE (
+			                CONCATENATEX (
+			                    dGlossario,
+			                    "<div class='gc'><div class='t'>" & dGlossario[Termo] & "</div><div class='d'>" & dGlossario[Definição] & "</div></div>",
+			                    "",
+			                    dGlossario[Ordem], ASC
+			                )
+			            ) & "</div>",
+			        "",
+			        [@o], ASC
+			    )
+			RETURN
+			    [_CSS] & "<div style='padding:2px'>" & _html & "</div>"
+		displayFolder: 90 HTML
+		lineageTag: 235d84a7-8dfb-46fb-5fc6-ec1a102ed236
+
+	column _
+		isHidden
+		lineageTag: 8488a0cd-81ef-b75b-6a55-1999ce5ce60d
+		summarizeBy: none
+		isNameInferred
+		sourceColumn: [_]
+
+		annotation SummarizationSetBy = Automatic
+
+	partition _Medidas = calculated
+		mode: import
+		source = ROW ( "_", "" )
+

@@ -1,0 +1,199 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "5a87cbbb29852575d7d5",
+  "position": {
+    "x": 24,
+    "y": 540,
+    "z": 7000,
+    "height": 336,
+    "width": 900,
+    "tabOrder": 7000
+  },
+  "visual": {
+    "visualType": "tableEx",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Column": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "dProduto"
+                    }
+                  },
+                  "Property": "Apresentação"
+                }
+              },
+              "queryRef": "dProduto.Apresentação",
+              "nativeQueryRef": "Apresentação"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Venda Vitalis"
+                }
+              },
+              "queryRef": "_Medidas.Venda Vitalis",
+              "nativeQueryRef": "Venda Vitalis"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Venda Total Mercado"
+                }
+              },
+              "queryRef": "_Medidas.Venda Total Mercado",
+              "nativeQueryRef": "Venda Total Mercado",
+              "displayName": "Mercado"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Share Vitalis"
+                }
+              },
+              "queryRef": "_Medidas.Share Vitalis",
+              "nativeQueryRef": "Share Vitalis",
+              "displayName": "Share"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Δ Share p.p."
+                }
+              },
+              "queryRef": "_Medidas.Δ Share p.p.",
+              "nativeQueryRef": "Δ Share p.p."
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Preço Médio Vitalis"
+                }
+              },
+              "queryRef": "_Medidas.Preço Médio Vitalis",
+              "nativeQueryRef": "Preço Médio Vitalis",
+              "displayName": "Preço médio"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Estoque Atual"
+                }
+              },
+              "queryRef": "_Medidas.Estoque Atual",
+              "nativeQueryRef": "Estoque Atual",
+              "displayName": "Estoque"
+            }
+          ]
+        }
+      },
+      "sortDefinition": {
+        "sort": [
+          {
+            "field": {
+              "Measure": {
+                "Expression": {
+                  "SourceRef": {
+                    "Entity": "_Medidas"
+                  }
+                },
+                "Property": "Venda Total Mercado"
+              }
+            },
+            "direction": "Descending"
+          }
+        ]
+      }
+    },
+    "objects": {
+      "values": [
+        {
+          "properties": {
+            "fontColor": {
+              "solid": {
+                "color": {
+                  "expr": {
+                    "Measure": {
+                      "Expression": {
+                        "SourceRef": {
+                          "Entity": "_Medidas"
+                        }
+                      },
+                      "Property": "Cor Δ Share"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "selector": {
+            "data": [
+              {
+                "dataViewWildcard": {
+                  "matchingOption": 1
+                }
+              }
+            ],
+            "metadata": "_Medidas.Δ Share p.p."
+          }
+        }
+      ]
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Apresentações do produto'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

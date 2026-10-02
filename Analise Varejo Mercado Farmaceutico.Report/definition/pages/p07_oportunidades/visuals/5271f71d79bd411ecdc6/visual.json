@@ -1,0 +1,106 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/visualContainer/2.13.0/schema.json",
+  "name": "5271f71d79bd411ecdc6",
+  "position": {
+    "x": 286,
+    "y": 444,
+    "z": 12000,
+    "height": 432,
+    "width": 258,
+    "tabOrder": 12000
+  },
+  "visual": {
+    "visualType": "multiRowCard",
+    "query": {
+      "queryState": {
+        "Values": {
+          "projections": [
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Potencial +1 p.p."
+                }
+              },
+              "queryRef": "_Medidas.Potencial +1 p.p.",
+              "nativeQueryRef": "Potencial +1 p.p.",
+              "displayName": "Ganhar +1 p.p."
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Potencial +2 p.p."
+                }
+              },
+              "queryRef": "_Medidas.Potencial +2 p.p.",
+              "nativeQueryRef": "Potencial +2 p.p.",
+              "displayName": "Ganhar +2 p.p."
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Potencial Share Meta"
+                }
+              },
+              "queryRef": "_Medidas.Potencial Share Meta",
+              "nativeQueryRef": "Potencial Share Meta",
+              "displayName": "Ganhar a meta escolhida"
+            },
+            {
+              "field": {
+                "Measure": {
+                  "Expression": {
+                    "SourceRef": {
+                      "Entity": "_Medidas"
+                    }
+                  },
+                  "Property": "Market Gap"
+                }
+              },
+              "queryRef": "_Medidas.Market Gap",
+              "nativeQueryRef": "Market Gap",
+              "displayName": "Market gap total"
+            }
+          ]
+        }
+      }
+    },
+    "visualContainerObjects": {
+      "title": [
+        {
+          "properties": {
+            "show": {
+              "expr": {
+                "Literal": {
+                  "Value": "true"
+                }
+              }
+            },
+            "text": {
+              "expr": {
+                "Literal": {
+                  "Value": "'Quanto vale cada ponto de share'"
+                }
+              }
+            }
+          }
+        }
+      ]
+    },
+    "drillFilterOtherVisuals": true
+  }
+}

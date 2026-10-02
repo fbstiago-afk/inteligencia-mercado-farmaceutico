@@ -1,0 +1,160 @@
+/// Apresentações com venda no mercado ou saldo em estoque. Grão: FCC (apresentação).
+table dProduto
+	lineageTag: 211c4040-c3e2-7268-ae5d-80b06cc2656e
+
+	column CD_FCC
+		dataType: int64
+		isHidden
+		isKey
+		formatString: 0
+		lineageTag: 82508369-b3f0-547a-134d-fa70d8075266
+		summarizeBy: none
+		sourceColumn: CD_FCC
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Marca/produto, sem a apresentação.
+	column Produto
+		dataType: string
+		lineageTag: c2e369c8-0cf7-f4e8-cef6-60fabbf102d7
+		summarizeBy: none
+		sourceColumn: Produto
+
+		annotation SummarizationSetBy = Automatic
+
+	column Apresentação
+		dataType: string
+		lineageTag: fd2d800e-c640-fdb9-aba1-69de180edb80
+		summarizeBy: none
+		sourceColumn: Apresentação
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Produto e laboratório; chave de leitura para rankings.
+	column 'Produto · Laboratório'
+		dataType: string
+		lineageTag: 2af5480d-0322-94d2-635c-1c9d381e1dbe
+		summarizeBy: none
+		sourceColumn: Produto · Laboratório
+
+		annotation SummarizationSetBy = Automatic
+
+	column Laboratório
+		dataType: string
+		lineageTag: fd8c422d-5735-065d-7d42-21bf4c57da4f
+		summarizeBy: none
+		sourceColumn: Laboratório
+
+		annotation SummarizationSetBy = Automatic
+
+	column Molécula
+		dataType: string
+		lineageTag: 7e83875c-07ec-a392-ca41-2fefba7f441c
+		summarizeBy: none
+		sourceColumn: Molécula
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Categoria IQVIA: Rx Promovido, Rx Genérico, Rx Similar/Trade, MIP Marca, MIP Trade/Similar, MIP Genérico, OTC, Nutricionais, PAC, PEC.
+	column Categoria
+		dataType: string
+		lineageTag: ce98d0da-600b-9891-2666-98ea11f091a7
+		summarizeBy: none
+		sourceColumn: Categoria
+		sortByColumn: 'Categoria Ordem'
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Categoria Ordem'
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 0bf1ae4e-571e-6716-d8bf-dc0bec847fda
+		summarizeBy: none
+		sourceColumn: Categoria Ordem
+
+		annotation SummarizationSetBy = Automatic
+
+	column Segmento
+		dataType: string
+		lineageTag: d5f53663-a9ca-5b57-bda5-7c72a68aaabe
+		summarizeBy: none
+		sourceColumn: Segmento
+
+		annotation SummarizationSetBy = Automatic
+
+	/// Medicamento ou Não medicamento.
+	column Tipo
+		dataType: string
+		lineageTag: a5945230-3282-4577-0079-77d036099bd5
+		summarizeBy: none
+		sourceColumn: Tipo
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Classe ATC1'
+		dataType: string
+		displayFolder: Classe terapêutica
+		lineageTag: 25598f51-814d-ce6e-a9e8-786e64fa487a
+		summarizeBy: none
+		sourceColumn: Classe ATC1
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Classe ATC2'
+		dataType: string
+		displayFolder: Classe terapêutica
+		lineageTag: 83e8143f-d758-48e6-8fef-b2d435f35cbf
+		summarizeBy: none
+		sourceColumn: Classe ATC2
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Classe ATC3'
+		dataType: string
+		displayFolder: Classe terapêutica
+		lineageTag: 6c0e4679-b1fb-a7b4-2947-b7f75822726c
+		summarizeBy: none
+		sourceColumn: Classe ATC3
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Classe ATC4'
+		dataType: string
+		displayFolder: Classe terapêutica
+		lineageTag: b214958a-153d-857d-b42d-ba3d358edcb7
+		summarizeBy: none
+		sourceColumn: Classe ATC4
+
+		annotation SummarizationSetBy = Automatic
+
+	column 'Área da Farmácia'
+		dataType: string
+		lineageTag: 9b8a19d9-62be-5740-2f83-c68c779ca646
+		summarizeBy: none
+		sourceColumn: Área da Farmácia
+
+		annotation SummarizationSetBy = Automatic
+
+	column EAN
+		dataType: int64
+		isHidden
+		formatString: 0
+		lineageTag: 50224d2c-6d3d-9d63-4203-fb26997412e4
+		summarizeBy: none
+		sourceColumn: EAN
+
+		annotation SummarizationSetBy = Automatic
+
+	partition dProduto = m
+		mode: import
+		source =
+				let
+				    Fonte = fnLerCsv("dProduto.csv"),
+				    Tipos = Table.TransformColumnTypes(Fonte, {{"CD_FCC", Int64.Type}, {"Produto", type text}, {"Apresentacao", type text}, {"ProdutoLab", type text}, {"Laboratorio", type text}, {"Molecula", type text}, {"Categoria", type text}, {"CategoriaOrdem", Int64.Type}, {"Segmento", type text}, {"Tipo", type text}, {"ATC1", type text}, {"ATC2", type text}, {"ATC3", type text}, {"ATC4", type text}, {"AreaFarmacia", type text}, {"EAN", Int64.Type}}, "en-US"),
+				    Nomes = Table.RenameColumns(Tipos, {{"Apresentacao", "Apresentação"}, {"ProdutoLab", "Produto · Laboratório"}, {"Laboratorio", "Laboratório"}, {"Molecula", "Molécula"}, {"CategoriaOrdem", "Categoria Ordem"}, {"ATC1", "Classe ATC1"}, {"ATC2", "Classe ATC2"}, {"ATC3", "Classe ATC3"}, {"ATC4", "Classe ATC4"}, {"AreaFarmacia", "Área da Farmácia"}})
+				in
+				    Nomes
+
+	annotation PBI_ResultType = Table
+

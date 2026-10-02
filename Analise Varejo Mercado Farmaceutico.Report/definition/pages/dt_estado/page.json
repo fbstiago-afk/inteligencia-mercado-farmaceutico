@@ -1,0 +1,49 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "dt_estado",
+  "displayName": "Detalhe Estado",
+  "displayOption": "FitToPage",
+  "height": 900,
+  "width": 1600,
+  "type": "Drillthrough",
+  "pageBinding": {
+    "name": "f9fd464628534895b4db",
+    "type": "Drillthrough",
+    "parameters": [
+      {
+        "name": "4ccfec4c8d9e6c16fe8c",
+        "boundFilter": "efd17be4fa56fa25dbed",
+        "fieldExpr": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dEstado"
+              }
+            },
+            "Property": "Estado"
+          }
+        }
+      }
+    ]
+  },
+  "filterConfig": {
+    "filters": [
+      {
+        "name": "efd17be4fa56fa25dbed",
+        "field": {
+          "Column": {
+            "Expression": {
+              "SourceRef": {
+                "Entity": "dEstado"
+              }
+            },
+            "Property": "Estado"
+          }
+        },
+        "type": "Categorical",
+        "howCreated": "Drill"
+      }
+    ]
+  },
+  "visibility": "HiddenInViewMode"
+}

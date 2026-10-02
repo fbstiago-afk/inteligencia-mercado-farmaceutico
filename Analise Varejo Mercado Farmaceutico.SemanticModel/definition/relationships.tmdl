@@ -1,0 +1,28 @@
+relationship 140c4be0-144b-548f-49f0-abdd77084f0e
+	fromColumn: fVendas.AnoMesNum
+	toColumn: dCalendario.AnoMesNum
+
+relationship 425bdba2-be9c-ef75-bf6f-ef13a5066ff2
+	fromColumn: fVendas.CD_DISTRIBUIDOR
+	toColumn: dDistribuidor.CD_DISTRIBUIDOR
+
+relationship 54cb5368-4c6c-9754-c2b8-fb42cceae404
+	fromColumn: fVendas.CD_FCC
+	toColumn: dProduto.CD_FCC
+
+relationship 4e38a824-210d-3156-9730-acb1e67f9925
+	fromColumn: fVendas.CD_ESTADO
+	toColumn: dEstado.CD_ESTADO
+
+relationship 806e4aff-bf95-69b3-e702-9344799689af
+	fromColumn: fVendas.CD_TIPO_FARMACIA
+	toColumn: dTipoFarmacia.CD_TIPO_FARMACIA
+
+relationship b1db6625-b099-84c7-5901-1b77198dc086
+	fromColumn: fEstoque.CD_FCC
+	toColumn: dProduto.CD_FCC
+
+relationship 8138733c-3eeb-287f-fd57-59488a5b46d9
+	fromColumn: fEstoque.CD_ESTADO
+	toColumn: dEstado.CD_ESTADO
+

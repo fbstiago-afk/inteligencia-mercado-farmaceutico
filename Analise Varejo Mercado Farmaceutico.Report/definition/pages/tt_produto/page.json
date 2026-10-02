@@ -1,0 +1,15 @@
+{
+  "$schema": "https://developer.microsoft.com/json-schemas/fabric/item/report/definition/page/2.1.0/schema.json",
+  "name": "tt_produto",
+  "displayName": "Tooltip Produto",
+  "displayOption": "FitToPage",
+  "height": 330,
+  "width": 340,
+  "pageBinding": {
+    "name": "1a266c257917f2780287",
+    "type": "Tooltip",
+    "parameters": []
+  },
+  "visibility": "HiddenInViewMode",
+  "type": "Tooltip"
+}
