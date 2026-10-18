@@ -1,5 +1,12 @@
 # Inteligência de Mercado Farmacêutico
 
+<!-- portfolio-link:start -->
+[![Ver no portfólio](https://img.shields.io/badge/Ver%20o%20painel%20no%20portf%C3%B3lio-Bocardi%20Data-6C3BAA?style=for-the-badge)](https://bocardidata.base44.app/ProjectDetail?id=6a5688b6a9da27909ac9a20f)
+
+> 🔗 **Quer ver o visual do Power BI?** Acesse a página do projeto no portfólio: **[https://bocardidata.base44.app/ProjectDetail?id=6a5688b6a9da27909ac9a20f](https://bocardidata.base44.app/ProjectDetail?id=6a5688b6a9da27909ac9a20f)**
+<!-- portfolio-link:end -->
+
+
 Dashboard em Power BI que cruza as vendas de uma distribuidora farmacêutica com dados de auditoria de mercado. Mostra participação, ganho e perda de share, oportunidades por produto e laboratório e alinhamento do estoque.
 
 Projeto de portfólio. O nome da empresa é fictício (**Vitalis**) e os valores de venda e estoque foram escalados para preservar a confidencialidade.
